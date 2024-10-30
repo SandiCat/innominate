@@ -1,31 +1,79 @@
-import { useRef } from 'react'
-import { ReactInfiniteCanvas, ReactInfiniteCanvasHandle } from 'react-infinite-canvas'
-import './App.css'
+import { useState, MouseEvent } from "react";
+import * as Vec2 from "./lib/Vec2";
 
-function App() {
-  const canvasRef = useRef<ReactInfiniteCanvasHandle>()
-
-  return (
-    <div className="h-full w-full">
-      <ReactInfiniteCanvas
-        ref={canvasRef}
-        onCanvasMount={(mountFunc: ReactInfiniteCanvasHandle) => {
-          mountFunc.fitContentToView({ scale: 1 })
-        }}
-      >
-        {/* Example component */}
-        <div className="w-64 h-64 bg-blue-500 rounded-lg p-6 text-white shadow-lg">
-          <h2 className="text-xl font-bold mb-4">Draggable Component</h2>
-          <p>You can:</p>
-          <ul className="list-disc list-inside">
-            <li>Zoom in/out</li>
-            <li>Pan around</li>
-            <li>Scroll to navigate</li>
-          </ul>
-        </div>
-      </ReactInfiniteCanvas>
-    </div>
-  )
+interface Camera {
+  position: Vec2.Vec2;
+  scale: number;
 }
 
-export default App
+type DragState =
+  | { type: "idle" }
+  | { type: "dragging"; lastPosition: Vec2.Vec2 };
+
+const ZOOM_SPEED = 0.01;
+
+function App() {
+  const [transform, setTransform] = useState<Camera>({ position: { x: 0, y: 0 }, scale: 1 });
+  const [dragState, setDragState] = useState<DragState>({ type: "idle" });
+
+  const handleMouseDown = (e: MouseEvent) => {
+    setDragState({
+      type: "dragging",
+      lastPosition: Vec2.fromMouseEvent(e)
+    });
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (dragState.type !== "dragging") return;
+
+    const currentPosition = Vec2.fromMouseEvent(e);
+    const delta = Vec2.subtract(currentPosition, dragState.lastPosition);
+
+    setTransform(prev => ({
+      ...prev,
+      position: Vec2.add(prev.position, delta)
+    }));
+
+    setDragState({
+      type: "dragging",
+      lastPosition: currentPosition
+    });
+  };
+
+  const handleMouseUp = () => {
+    setDragState({ type: "idle" });
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    const scaleFactor = 1 - Math.sign(e.deltaY) * ZOOM_SPEED;
+    setTransform(prev => ({
+      ...prev,
+      scale: prev.scale * scaleFactor
+    }));
+  };
+
+  return (
+    <div
+      className="w-screen h-screen overflow-hidden bg-gray-900"
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      onWheel={handleWheel}
+    >
+      <div
+        style={{
+          transform: `translate(${transform.position.x}px, ${transform.position.y}px) scale(${transform.scale})`,
+          transformOrigin: "center",
+          transition: "transform 0.1s ease-out"
+        }}
+      >
+        <div className="w-32 h-32 bg-blue-500 absolute left-[200px] top-[200px]" />
+        <div className="w-32 h-32 bg-red-500 absolute left-[400px] top-[300px]" />
+        <div className="w-32 h-32 bg-green-500 absolute left-[600px] top-[200px]" />
+      </div>
+    </div>
+  );
+}
+
+export default App;
