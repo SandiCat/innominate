@@ -2,7 +2,6 @@ import { useState, MouseEvent, useRef } from "react";
 import { Map } from "immutable";
 import * as Vec2 from "./lib/Vec2";
 import { match } from "ts-pattern";
-import { LiftedWrapper } from "./components/LiftedWrapper";
 
 interface CanvasItem {
   position: Vec2.Vec2;
@@ -12,7 +11,7 @@ interface CanvasItem {
 type DragState =
   | { type: "idle" }
   | { type: "dragging-canvas"; lastPosition: Vec2.Vec2 }
-  | { type: "dragging-item"; item: CanvasItem; id: string; };
+  | { type: "dragging-item"; item: CanvasItem; id: string; offset: Vec2.Vec2 };
 
 function CanvasItemComponent({ item }: { item: CanvasItem }) {
   return (
@@ -21,25 +20,35 @@ function CanvasItemComponent({ item }: { item: CanvasItem }) {
       style={{
         left: item.position.x,
         top: item.position.y,
-        backgroundColor: item.color
+        backgroundColor: item.color,
       }}
     />
   );
 }
 
+function screenToCanvas(screenPos: Vec2.Vec2, origin: Vec2.Vec2): Vec2.Vec2 {
+  return Vec2.subtract(screenPos, origin);
+}
+
+function canvasToScreen(canvasPos: Vec2.Vec2, origin: Vec2.Vec2): Vec2.Vec2 {
+  return Vec2.add(canvasPos, origin);
+}
+
 function App() {
   const [origin, setOrigin] = useState<Vec2.Vec2>({ x: 0, y: 0 });
-  const [items, setItems] = useState<Map<string, CanvasItem>>(Map({
-    "1": { position: { x: 200, y: 200 }, color: "#3B82F6" },
-    "2": { position: { x: 400, y: 300 }, color: "#EF4444" },
-    "3": { position: { x: 600, y: 200 }, color: "#10B981" },
-  }));
+  const [items, setItems] = useState<Map<string, CanvasItem>>(
+    Map({
+      "1": { position: { x: 200, y: 200 }, color: "#3B82F6" },
+      "2": { position: { x: 400, y: 300 }, color: "#EF4444" },
+      "3": { position: { x: 600, y: 200 }, color: "#10B981" },
+    })
+  );
   const [dragState, setDragState] = useState<DragState>({ type: "idle" });
 
   const handleCanvasMouseDown = (e: MouseEvent) => {
     setDragState({
       type: "dragging-canvas",
-      lastPosition: Vec2.fromMouseEvent(e)
+      lastPosition: Vec2.fromMouseEvent(e),
     });
   };
 
@@ -47,9 +56,13 @@ function App() {
     e.stopPropagation();
     const item = items.get(id);
     if (!item) throw new Error(`Item with id ${id} not found`);
-    if (dragState.type !== "idle") throw new Error("Must be in ");
+    if (dragState.type !== "idle") throw new Error("Must be in idle state");
 
-    setDragState({ type: "dragging-item", item, id });
+    const mousePos = Vec2.fromMouseEvent(e);
+    const canvasMousePos = screenToCanvas(mousePos, origin);
+    const offset = Vec2.subtract(item.position, canvasMousePos);
+
+    setDragState({ type: "dragging-item", item, id, offset });
     setItems(items.remove(id));
   };
 
@@ -57,20 +70,21 @@ function App() {
     const mousePos = Vec2.fromMouseEvent(e);
 
     match(dragState)
-      .with({ type: "idle" }, () => { })
+      .with({ type: "idle" }, () => {})
       .with({ type: "dragging-canvas" }, (state) => {
         const delta = Vec2.subtract(mousePos, state.lastPosition);
         setOrigin(Vec2.add(origin, delta));
         setDragState({ ...state, lastPosition: mousePos });
       })
       .with({ type: "dragging-item" }, (state) => {
-        const worldPos = Vec2.subtract(mousePos, origin);
+        const canvasMousePos = screenToCanvas(mousePos, origin);
+        const newPosition = Vec2.add(canvasMousePos, state.offset);
         setDragState({
           ...state,
           item: {
             ...state.item,
-            position: worldPos
-          }
+            position: newPosition,
+          },
         });
       })
       .exhaustive();
@@ -81,7 +95,7 @@ function App() {
       .with({ type: "dragging-item" }, (state) => {
         setItems(items.set(state.id, state.item));
       })
-      .otherwise(() => { });
+      .otherwise(() => {});
 
     setDragState({ type: "idle" });
   };
@@ -94,11 +108,13 @@ function App() {
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
-      <div style={{
-        transform: `translate(${origin.x}px, ${origin.y}px)`,
-      }}>
+      <div
+        style={{
+          transform: `translate(${origin.x}px, ${origin.y}px)`,
+        }}
+      >
         {items.entrySeq().map(([id, item]) => (
-          <div key={id} onMouseDown={e => handleItemMouseDown(e, id)}>
+          <div key={id} onMouseDown={(e) => handleItemMouseDown(e, id)}>
             <CanvasItemComponent item={item} />
           </div>
         ))}
@@ -106,7 +122,7 @@ function App() {
       {dragState.type === "dragging-item" && (
         <CanvasItemComponent item={dragState.item} />
       )}
-    </div >
+    </div>
   );
 }
 
