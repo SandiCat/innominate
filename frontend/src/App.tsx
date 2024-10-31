@@ -1,6 +1,7 @@
 import { useState, MouseEvent, useRef } from "react";
 import { Map } from "immutable";
 import * as Vec2 from "./lib/Vec2";
+import { match } from "ts-pattern";
 
 interface Camera {
   position: Vec2.Vec2;
@@ -12,9 +13,10 @@ interface CanvasItem {
   color: string;
 }
 
-type CanvasDragState =
+type DragState =
   | { type: "idle" }
-  | { type: "dragging"; lastPosition: Vec2.Vec2 };
+  | { type: "dragging-canvas"; lastPosition: Vec2.Vec2 }
+  | { type: "dragging-item"; item: CanvasItem; id: string; lastPosition: Vec2.Vec2 };
 
 function CanvasItemComponent({ item }: { item: CanvasItem }) {
   return (
@@ -38,35 +40,65 @@ function App() {
     "2": { position: { x: 400, y: 300 }, color: "#EF4444" },
     "3": { position: { x: 600, y: 200 }, color: "#10B981" },
   }));
+  const [dragState, setDragState] = useState<DragState>({ type: "idle" });
 
-  const dragState = useRef<CanvasDragState>({ type: "idle" });
-
-  const handleMouseDown = (e: MouseEvent) => {
-    dragState.current = {
-      type: "dragging",
+  const handleCanvasMouseDown = (e: MouseEvent) => {
+    setDragState({
+      type: "dragging-canvas",
       lastPosition: Vec2.fromMouseEvent(e)
-    };
+    });
+  };
+
+  const handleItemMouseDown = (e: MouseEvent, id: string) => {
+    e.stopPropagation();
+    const item = items.get(id);
+    if (!item) throw new Error(`Item with id ${id} not found`);
+    if (dragState.type !== "idle") throw new Error("Must be in ");
+
+    setDragState({
+      type: "dragging-item",
+      item,
+      id,
+      lastPosition: Vec2.fromMouseEvent(e)
+    });
+    setItems(items.remove(id));
   };
 
   const handleMouseMove = (e: MouseEvent) => {
-    if (dragState.current.type !== "dragging") return;
-
     const currentPosition = Vec2.fromMouseEvent(e);
-    const delta = Vec2.subtract(currentPosition, dragState.current.lastPosition);
 
-    setTransform(prev => ({
-      ...prev,
-      position: Vec2.add(prev.position, delta)
-    }));
-
-    dragState.current = {
-      type: "dragging",
-      lastPosition: currentPosition
-    };
+    match(dragState)
+      .with({ type: "idle" }, () => { })
+      .with({ type: "dragging-canvas" }, (state) => {
+        const delta = Vec2.subtract(currentPosition, state.lastPosition);
+        setTransform(prev => ({
+          ...prev,
+          position: Vec2.add(prev.position, delta)
+        }));
+        setDragState({ ...state, lastPosition: currentPosition });
+      })
+      .with({ type: "dragging-item" }, (state) => {
+        const delta = Vec2.subtract(currentPosition, state.lastPosition);
+        setDragState({
+          ...state,
+          item: {
+            ...state.item,
+            position: Vec2.add(state.item.position, Vec2.scale(delta, 1 / transform.scale))
+          },
+          lastPosition: currentPosition
+        });
+      })
+      .exhaustive();
   };
 
   const handleMouseUp = () => {
-    dragState.current = { type: "idle" };
+    match(dragState)
+      .with({ type: "dragging-item" }, (state) => {
+        setItems(items.set(state.id, state.item));
+      })
+      .otherwise(() => { });
+
+    setDragState({ type: "idle" });
   };
 
   const handleWheel = (e: React.WheelEvent) => {
@@ -80,22 +112,24 @@ function App() {
   return (
     <div
       className="w-screen h-screen overflow-hidden bg-gray-900"
-      onMouseDown={handleMouseDown}
+      onMouseDown={handleCanvasMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       onWheel={handleWheel}
     >
-      <div
-        style={{
-          transform: `translate(${transform.position.x}px, ${transform.position.y}px) scale(${transform.scale})`,
-          transformOrigin: "center",
-          transition: "transform 0.1s ease-out"
-        }}
-      >
+      <div style={{
+        transform: `translate(${transform.position.x}px, ${transform.position.y}px) scale(${transform.scale})`,
+        transformOrigin: "center",
+      }}>
         {items.entrySeq().map(([id, item]) => (
-          <CanvasItemComponent key={id} item={item} />
+          <div key={id} onMouseDown={e => handleItemMouseDown(e, id)}>
+            <CanvasItemComponent item={item} />
+          </div>
         ))}
+        {dragState.type === "dragging-item" && (
+          <CanvasItemComponent item={dragState.item} />
+        )}
       </div>
     </div>
   );
