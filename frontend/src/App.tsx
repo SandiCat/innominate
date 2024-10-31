@@ -19,10 +19,11 @@ type CanvasDragState =
 function CanvasItemComponent({ item }: { item: CanvasItem }) {
   return (
     <div
-      className={`w-32 h-32 absolute bg-${item.color}-500`}
+      className="w-32 h-32 absolute cursor-pointer"
       style={{
         left: item.position.x,
-        top: item.position.y
+        top: item.position.y,
+        backgroundColor: item.color
       }}
     />
   );
@@ -33,9 +34,9 @@ const ZOOM_SPEED = 0.01;
 function App() {
   const [transform, setTransform] = useState<Camera>({ position: { x: 0, y: 0 }, scale: 1 });
   const [items, setItems] = useState<Map<string, CanvasItem>>(Map({
-    "1": { position: { x: 200, y: 200 }, color: "blue" },
-    "2": { position: { x: 400, y: 300 }, color: "red" },
-    "3": { position: { x: 600, y: 200 }, color: "green" },
+    "1": { position: { x: 200, y: 200 }, color: "#3B82F6" },
+    "2": { position: { x: 400, y: 300 }, color: "#EF4444" },
+    "3": { position: { x: 600, y: 200 }, color: "#10B981" },
   }));
 
   const dragState = useRef<CanvasDragState>({ type: "idle" });
@@ -92,7 +93,7 @@ function App() {
           transition: "transform 0.1s ease-out"
         }}
       >
-        {items.valueSeq().map((item, id) => (
+        {items.entrySeq().map(([id, item]) => (
           <CanvasItemComponent key={id} item={item} />
         ))}
       </div>
