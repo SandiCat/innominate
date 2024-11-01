@@ -70,8 +70,10 @@ function App() {
     if (dragState.type !== "idle") throw new Error("Must be in idle state");
 
     const mousePos = Vec2.fromMouseEvent(e);
-    const canvasMousePos = screenToCanvas(mousePos, origin);
-    const offset = Vec2.subtract(item.position, canvasMousePos);
+    const offset = Vec2.subtract(
+      canvasToScreen(item.position, origin),
+      mousePos
+    );
 
     setDragState({ type: "dragging-item", item, id, offset });
     setItems(items.remove(id));
@@ -88,8 +90,10 @@ function App() {
         setDragState({ ...state, lastPosition: mousePos });
       })
       .with({ type: "dragging-item" }, (state) => {
-        const canvasMousePos = screenToCanvas(mousePos, origin);
-        const newPosition = Vec2.add(canvasMousePos, state.offset);
+        const newPosition = screenToCanvas(
+          Vec2.add(mousePos, state.offset),
+          origin
+        );
         setDragState({
           ...state,
           item: {
@@ -117,6 +121,19 @@ function App() {
     setItems(items.set(id, { ...item, content }));
   };
 
+  const handleDoubleClick = (e: MouseEvent) => {
+    const mousePos = Vec2.fromMouseEvent(e);
+    const canvasPos = screenToCanvas(mousePos, origin);
+    const newId = crypto.randomUUID();
+
+    setItems(
+      items.set(newId, {
+        position: canvasPos,
+        content: "",
+      })
+    );
+  };
+
   return (
     <div
       className="w-screen h-screen overflow-hidden bg-blue-50"
@@ -124,6 +141,7 @@ function App() {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      onDoubleClick={handleDoubleClick}
     >
       <div
         style={{
@@ -138,10 +156,10 @@ function App() {
             onDragStart={(e) => handleItemMouseDown(e, id)}
           />
         ))}
+        {dragState.type === "dragging-item" && (
+          <CanvasItemComponent item={dragState.item} />
+        )}
       </div>
-      {dragState.type === "dragging-item" && (
-        <CanvasItemComponent item={dragState.item} />
-      )}
     </div>
   );
 }
