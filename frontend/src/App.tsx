@@ -2,10 +2,11 @@ import { useState, MouseEvent, useRef } from "react";
 import { Map } from "immutable";
 import * as Vec2 from "./lib/Vec2";
 import { match } from "ts-pattern";
+import { Note } from "./components/Note";
 
 interface CanvasItem {
   position: Vec2.Vec2;
-  color: string;
+  content: string;
 }
 
 type DragState =
@@ -13,16 +14,26 @@ type DragState =
   | { type: "dragging-canvas"; lastPosition: Vec2.Vec2 }
   | { type: "dragging-item"; item: CanvasItem; id: string; offset: Vec2.Vec2 };
 
-function CanvasItemComponent({ item }: { item: CanvasItem }) {
+function CanvasItemComponent({
+  item,
+  onContentChange,
+  onDragStart,
+}: {
+  item: CanvasItem;
+  onContentChange?: (content: string) => void;
+  onDragStart?: (e: MouseEvent) => void;
+}) {
   return (
     <div
-      className="w-32 h-32 absolute cursor-pointer"
+      className="absolute"
       style={{
         left: item.position.x,
         top: item.position.y,
-        backgroundColor: item.color,
       }}
-    />
+      onMouseDown={onDragStart}
+    >
+      <Note content={item.content} onChange={onContentChange || (() => {})} />
+    </div>
   );
 }
 
@@ -38,9 +49,9 @@ function App() {
   const [origin, setOrigin] = useState<Vec2.Vec2>({ x: 0, y: 0 });
   const [items, setItems] = useState<Map<string, CanvasItem>>(
     Map({
-      "1": { position: { x: 200, y: 200 }, color: "#3B82F6" },
-      "2": { position: { x: 400, y: 300 }, color: "#EF4444" },
-      "3": { position: { x: 600, y: 200 }, color: "#10B981" },
+      "1": { position: { x: 200, y: 200 }, content: "First note" },
+      "2": { position: { x: 400, y: 300 }, content: "Second note" },
+      "3": { position: { x: 600, y: 200 }, content: "Third note" },
     })
   );
   const [dragState, setDragState] = useState<DragState>({ type: "idle" });
@@ -100,6 +111,12 @@ function App() {
     setDragState({ type: "idle" });
   };
 
+  const handleContentChange = (id: string, content: string) => {
+    const item = items.get(id);
+    if (!item) throw new Error(`Item with id ${id} not found`);
+    setItems(items.set(id, { ...item, content }));
+  };
+
   return (
     <div
       className="w-screen h-screen overflow-hidden bg-blue-50"
@@ -114,9 +131,12 @@ function App() {
         }}
       >
         {items.entrySeq().map(([id, item]) => (
-          <div key={id} onMouseDown={(e) => handleItemMouseDown(e, id)}>
-            <CanvasItemComponent item={item} />
-          </div>
+          <CanvasItemComponent
+            key={id}
+            item={item}
+            onContentChange={(content) => handleContentChange(id, content)}
+            onDragStart={(e) => handleItemMouseDown(e, id)}
+          />
         ))}
       </div>
       {dragState.type === "dragging-item" && (
