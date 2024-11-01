@@ -45,15 +45,15 @@ function canvasToScreen(canvasPos: Vec2.Vec2, origin: Vec2.Vec2): Vec2.Vec2 {
   return Vec2.add(canvasPos, origin);
 }
 
+const SAMPLE_NOTES = Map({
+  "1": { position: { x: 200, y: 200 }, content: "First note" },
+  "2": { position: { x: 400, y: 300 }, content: "Second note" },
+  "3": { position: { x: 600, y: 200 }, content: "Third note" },
+});
+
 function App() {
   const [origin, setOrigin] = useState<Vec2.Vec2>({ x: 0, y: 0 });
-  const [items, setItems] = useState<Map<string, CanvasItem>>(
-    Map({
-      "1": { position: { x: 200, y: 200 }, content: "First note" },
-      "2": { position: { x: 400, y: 300 }, content: "Second note" },
-      "3": { position: { x: 600, y: 200 }, content: "Third note" },
-    })
-  );
+  const [items, setItems] = useState<Map<string, CanvasItem>>(SAMPLE_NOTES);
   const [dragState, setDragState] = useState<DragState>({ type: "idle" });
 
   const handleCanvasMouseDown = (e: MouseEvent) => {
