@@ -2,11 +2,15 @@ import { useState, MouseEvent, useRef } from "react";
 import { Map } from "immutable";
 import * as Vec2 from "./lib/Vec2";
 import { match } from "ts-pattern";
-import { Note } from "./components/Note";
+import { NoteTree } from "./components/NoteTree";
+import * as Tree from "./lib/Tree";
+
+type NoteId = string;
+type CanvasItemId = string;
 
 interface CanvasItem {
   position: Vec2.Vec2;
-  content: string;
+  noteTree: Tree.Tree<NoteId, void>;
 }
 
 type DragState =
@@ -15,24 +19,26 @@ type DragState =
   | { type: "dragging-item"; item: CanvasItem; id: string; offset: Vec2.Vec2 };
 
 function CanvasItemComponent({
-  item,
+  position,
+  tree,
   onContentChange,
   onDragStart,
 }: {
-  item: CanvasItem;
-  onContentChange?: (content: string) => void;
+  position: Vec2.Vec2;
+  tree: Tree.Tree<NoteId, string>;
+  onContentChange?: (noteId: NoteId, content: string) => void;
   onDragStart?: (e: MouseEvent) => void;
 }) {
   return (
     <div
       className="absolute"
       style={{
-        left: item.position.x,
-        top: item.position.y,
+        left: position.x,
+        top: position.y,
       }}
       onMouseDown={onDragStart}
     >
-      <Note content={item.content} onChange={onContentChange || (() => {})} />
+      <NoteTree tree={tree} onContentChange={onContentChange} />
     </div>
   );
 }
@@ -53,7 +59,8 @@ const SAMPLE_NOTES = Map({
 
 function App() {
   const [origin, setOrigin] = useState<Vec2.Vec2>({ x: 0, y: 0 });
-  const [items, setItems] = useState<Map<string, CanvasItem>>(SAMPLE_NOTES);
+  const [notes, setNotes] = useState<Map<NoteId, string>>(Map());
+  const [items, setItems] = useState<Map<CanvasItemId, CanvasItem>>(Map());
   const [dragState, setDragState] = useState<DragState>({ type: "idle" });
 
   const handleCanvasMouseDown = (e: MouseEvent) => {
@@ -115,21 +122,21 @@ function App() {
     setDragState({ type: "idle" });
   };
 
-  const handleContentChange = (id: string, content: string) => {
-    const item = items.get(id);
-    if (!item) throw new Error(`Item with id ${id} not found`);
-    setItems(items.set(id, { ...item, content }));
+  const handleContentChange = (noteId: NoteId, content: string) => {
+    setNotes(notes.set(noteId, content));
   };
 
   const handleDoubleClick = (e: MouseEvent) => {
     const mousePos = Vec2.fromMouseEvent(e);
     const canvasPos = screenToCanvas(mousePos, origin);
-    const newId = crypto.randomUUID();
+    const newItemId = crypto.randomUUID();
+    const newNoteId = crypto.randomUUID();
 
+    setNotes(notes.set(newNoteId, ""));
     setItems(
-      items.set(newId, {
+      items.set(newItemId, {
         position: canvasPos,
-        content: "",
+        noteTree: Tree.singleton(newNoteId, undefined),
       })
     );
   };
@@ -152,12 +159,13 @@ function App() {
           <CanvasItemComponent
             key={id}
             item={item}
-            onContentChange={(content) => handleContentChange(id, content)}
+            notes={notes}
+            onContentChange={handleContentChange}
             onDragStart={(e) => handleItemMouseDown(e, id)}
           />
         ))}
         {dragState.type === "dragging-item" && (
-          <CanvasItemComponent item={dragState.item} />
+          <CanvasItemComponent item={dragState.item} notes={notes} />
         )}
       </div>
     </div>

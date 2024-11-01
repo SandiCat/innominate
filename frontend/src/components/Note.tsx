@@ -11,8 +11,7 @@ export function Note({ content, onChange }: NoteProps) {
   return (
     <div
       className="w-[200px] min-h-[120px] 
-                 bg-white rounded-lg shadow-lg
-                 cursor-move relative"
+                 bg-white rounded-lg shadow-lg cursor-grab relative"
     >
       <button
         className="absolute top-2 right-2 p-1 rounded hover:bg-gray-100"
