@@ -6,6 +6,7 @@ import { Id } from "../convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { Note } from "./components/Note";
+import { useLocalValue } from "./utils/convex";
 
 const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID as Id<"users">;
 
@@ -49,11 +50,19 @@ function canvasToScreen(canvasPos: Vec2.Vec2, origin: Vec2.Vec2): Vec2.Vec2 {
 
 function App() {
   const [origin, setOrigin] = useState<Vec2.Vec2>({ x: 0, y: 0 });
-  const [positions, setPositions] =
-    useState<Map<Id<"notes">, Vec2.Vec2>>(Map());
+  const [positions, setPositions] = useLocalValue(
+    api.canvases.canvasForUser,
+    DEV_USER_ID,
+    api.canvases.persistUserCanvas,
+    1000
+  );
   const [dragState, setDragState] = useState<DragState>({ type: "idle" });
 
   const createNote = useMutation(api.notes.create);
+
+  if (positions === undefined) {
+    return <div className="p-4">Loading canvas...</div>;
+  }
 
   const handleCanvasMouseDown = (e: MouseEvent) => {
     setDragState({
@@ -137,6 +146,7 @@ function App() {
       >
         {positions.entrySeq().map(([noteId, position]) => (
           <CanvasItem
+            key={noteId}
             noteId={noteId}
             position={position}
             onDragStart={(e) => handleItemMouseDown(e, noteId)}

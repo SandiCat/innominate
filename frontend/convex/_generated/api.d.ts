@@ -14,9 +14,11 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as auth from "../auth.js";
+import type * as canvases from "../canvases.js";
 import type * as counters from "../counters.js";
 import type * as http from "../http.js";
 import type * as notes from "../notes.js";
+import type * as types from "../types.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -28,9 +30,11 @@ import type * as notes from "../notes.js";
  */
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  canvases: typeof canvases;
   counters: typeof counters;
   http: typeof http;
   notes: typeof notes;
+  types: typeof types;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

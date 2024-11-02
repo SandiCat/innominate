@@ -1,13 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-
-const canvasItem = v.object({
-  noteId: v.id("notes"),
-  position: v.object({
-    x: v.number(),
-    y: v.number(),
-  }),
-});
+import * as types from "./types";
 
 export default defineSchema({
   users: defineTable({}), // just the ID
@@ -17,7 +10,7 @@ export default defineSchema({
     userId: v.id("users"),
   }).index("by_user", ["userId"]),
   canvases: defineTable({
-    items: v.array(canvasItem),
+    items: types.canvas,
     userId: v.id("users"),
   }).index("by_user", ["userId"]),
   // just for testing:
