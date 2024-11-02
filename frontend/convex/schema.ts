@@ -1,6 +1,13 @@
 import { defineSchema, defineTable } from "convex/server";
-import { authTables } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+
+const canvasItem = v.object({
+  noteId: v.id("notes"),
+  position: v.object({
+    x: v.number(),
+    y: v.number(),
+  }),
+});
 
 export default defineSchema({
   users: defineTable({}), // just the ID
@@ -10,17 +17,12 @@ export default defineSchema({
     userId: v.id("users"),
   }).index("by_user", ["userId"]),
   canvases: defineTable({
-    name: v.string(),
+    items: v.array(canvasItem),
     userId: v.id("users"),
   }).index("by_user", ["userId"]),
-  canvasItems: defineTable({
-    canvasId: v.id("canvases"),
-    noteId: v.id("notes"),
-    position: v.object({
-      x: v.number(),
-      y: v.number(),
-    }),
-  })
-    .index("by_canvas", ["canvasId"])
-    .index("by_note", ["noteId"]),
+  // just for testing:
+  counters: defineTable({
+    value: v.number(),
+    name: v.string(),
+  }).index("by_name", ["name"]),
 });
