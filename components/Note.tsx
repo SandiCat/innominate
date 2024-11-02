@@ -2,19 +2,14 @@ import { useState } from "react";
 import { Id } from "../../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { match } from "ts-pattern";
 
 interface NoteProps {
   noteId: Id<"notes">;
   onDragStart?: (e: React.MouseEvent) => void;
 }
 
-type NoteState =
-  | { mode: "viewing" }
-  | { mode: "editing"; draftContent: string };
-
 export function Note({ noteId, onDragStart }: NoteProps) {
-  const [state, setState] = useState<NoteState>({ mode: "viewing" });
+  const [isEditing, setIsEditing] = useState(false);
   const note = useQuery(api.notes.get, { noteId });
   const updateNote = useMutation(api.notes.update);
 
@@ -29,33 +24,20 @@ export function Note({ noteId, onDragStart }: NoteProps) {
       <button
         className="absolute top-2 right-2 p-1 rounded hover:bg-gray-100"
         onMouseDown={(e) => e.stopPropagation()}
-        onClick={async (e) => {
+        onClick={(e) => {
           e.stopPropagation();
-          match(state)
-            .with({ mode: "editing" }, async ({ draftContent }) => {
-              await updateNote({ noteId, content: draftContent });
-              setState({ mode: "viewing" });
-            })
-            .with({ mode: "viewing" }, () => {
-              setState({ mode: "editing", draftContent: note.content });
-            })
-            .exhaustive();
+          setIsEditing(!isEditing);
         }}
       >
-        {state.mode === "editing" ? "✓" : "✎"}
+        {isEditing ? "✓" : "✎"}
       </button>
       <div className="p-4">
-        {state.mode === "editing" ? (
+        {isEditing ? (
           <textarea
             onMouseDown={(e) => e.stopPropagation()}
             className="w-full resize-none outline-none select-text"
-            value={state.draftContent}
-            onChange={(e) =>
-              setState({
-                mode: "editing",
-                draftContent: e.target.value,
-              })
-            }
+            value={note.content}
+            onChange={(e) => updateNote({ noteId, content: e.target.value })}
             autoFocus
             rows={1}
             style={{ height: "auto", minHeight: "1em" }}

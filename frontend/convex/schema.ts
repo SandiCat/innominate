@@ -3,7 +3,7 @@ import { authTables } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 
 export default defineSchema({
-  user: defineTable({}), // just the ID
+  users: defineTable({}), // just the ID
   notes: defineTable({
     content: v.string(),
     parentId: v.optional(v.id("notes")),
