@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@auth/core": "^0.36.0",
+    "@convex-dev/auth": "^0.0.74",
     "convex": "^1.17.0",
     "immer": "^10.1.1",
     "immutable": "^4.3.7",
