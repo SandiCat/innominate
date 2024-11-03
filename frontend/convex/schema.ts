@@ -14,6 +14,12 @@ export default defineSchema({
       searchField: "content",
       filterFields: ["userId"],
     }),
+  mentions: defineTable({
+    from: v.id("notes"),
+    to: v.id("notes"),
+  })
+    .index("by_from", ["from"])
+    .index("by_to", ["to"]),
   canvases: defineTable({
     userId: v.id("users"),
   }).index("by_user", ["userId"]),

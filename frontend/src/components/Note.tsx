@@ -3,6 +3,7 @@ import { Id } from "../../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { match } from "ts-pattern";
+import { parseNoteBody } from "../types";
 
 interface NoteProps {
   noteId: Id<"notes">;
@@ -53,12 +54,54 @@ function EditMode({
   );
 }
 
-function ViewMode({ content }: { content: string }) {
+function noteHumanId(noteId: Id<"notes">): string {
+  return noteId.slice(-6);
+}
+
+function MentionSpan({ noteId }: { noteId: Id<"notes"> }) {
+  const note = useQuery(api.notes.get, { noteId });
   return (
-    <div
-      className={`whitespace-pre-wrap select-none ${!content ? "text-gray-400" : ""}`}
+    <span
+      className="bg-blue-100 px-1 rounded cursor-help"
+      title={note?.content || "Loading..."}
     >
-      {content || "Empty..."}
+      @{noteHumanId(noteId)}
+    </span>
+  );
+}
+
+function ViewMode({ content }: { content: string }) {
+  if (!content) return <div className="text-gray-400">Empty...</div>;
+
+  return (
+    <div className="whitespace-pre-wrap select-none">
+      {parseNoteBody(content).map((token, i) =>
+        token.type === "text" ? (
+          <span key={i}>{token.text}</span>
+        ) : (
+          <MentionSpan key={i} noteId={token.noteId} />
+        )
+      )}
+    </div>
+  );
+}
+
+function Backlinks({ noteId }: { noteId: Id<"notes"> }) {
+  const mentionedBy = useQuery(api.notes.getMentionedBy, { noteId });
+
+  if (mentionedBy === undefined || mentionedBy.length === 0) return null;
+
+  return (
+    <div className="border-t border-gray-200 p-2 text-xs text-gray-500">
+      Mentioned by:{" "}
+      {mentionedBy.map((note, i) => (
+        <span key={note._id}>
+          {i > 0 && ", "}
+          <span className="hover:underline cursor-help" title={note.content}>
+            @{noteHumanId(note._id)}
+          </span>
+        </span>
+      ))}
     </div>
   );
 }
@@ -106,6 +149,7 @@ export function Note({ noteId, onDragStart }: NoteProps) {
           <ViewMode content={note.content} />
         )}
       </div>
+      <Backlinks noteId={noteId} />
     </div>
   );
 }

@@ -1,5 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { parseNoteBody } from "../src/types";
+import { Id } from "./_generated/dataModel";
 
 export const get = query({
   args: { noteId: v.id("notes") },
@@ -25,6 +27,25 @@ export const update = mutation({
     content: v.string(),
   },
   handler: async (ctx, { noteId, content }) => {
+    // First delete ALL existing mentions for this note
+    await ctx.db
+      .query("mentions")
+      .withIndex("by_from", (q) => q.eq("from", noteId))
+      .collect()
+      .then((mentions) =>
+        Promise.all(mentions.map((m) => ctx.db.delete(m._id)))
+      );
+
+    // Then add the new mentions from the current content
+    const tokens = parseNoteBody(content);
+    await Promise.all(
+      tokens
+        .filter((t) => t.type === "mention")
+        .map((mention) =>
+          ctx.db.insert("mentions", { from: noteId, to: mention.noteId })
+        )
+    );
+
     await ctx.db.patch(noteId, { content });
   },
 });
@@ -67,5 +88,23 @@ export const search = query({
         q.search("content", query).eq("userId", userId)
       )
       .take(10);
+  },
+});
+
+export const getMentionedBy = query({
+  args: { noteId: v.id("notes") },
+  handler: async (ctx, { noteId }) => {
+    const mentions = await ctx.db
+      .query("mentions")
+      .withIndex("by_to", (q) => q.eq("to", noteId))
+      .collect();
+
+    return await Promise.all(
+      mentions.map(async (mention) => {
+        const note = await ctx.db.get(mention.from);
+        if (!note) throw new Error("Mention of non-existent note");
+        return note;
+      })
+    );
   },
 });
