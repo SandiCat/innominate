@@ -25,14 +25,15 @@ interface CanvasItem {
 
 interface CanvasItemProps {
   id: Id<"canvasItems">;
+  position: Vec2.Vec2;
   onDragStart: (e: MouseEvent) => void;
 }
 
-function CanvasItem({ id, onDragStart }: CanvasItemProps) {
+function CanvasItem({ id, position, onDragStart }: CanvasItemProps) {
   const canvasItem = useQuery(api.canvasItems.get, { id });
 
   if (!canvasItem) return null;
-  const { position, noteId } = canvasItem;
+  const { noteId } = canvasItem;
 
   return (
     <div
@@ -131,12 +132,10 @@ function App() {
       .exhaustive();
   };
 
-  const handleMouseUp = () => {
-    match(dragState)
-      .with({ type: "dragging-item" }, (state) => {
-        setPosition(state.canvasItem);
-      })
-      .otherwise(() => {});
+  const handleMouseUp = async () => {
+    if (dragState.type === "dragging-item") {
+      await setPosition(dragState.canvasItem);
+    }
 
     setDragState({ type: "idle" });
   };
@@ -174,6 +173,7 @@ function App() {
             <CanvasItem
               key={canvasItem.id}
               id={canvasItem.id}
+              position={canvasItem.position}
               onDragStart={(e) => handleItemMouseDown(e, canvasItem)}
             />
           );
@@ -181,6 +181,7 @@ function App() {
         {dragState.type === "dragging-item" && (
           <CanvasItem
             id={dragState.canvasItem.id}
+            position={dragState.canvasItem.position}
             onDragStart={() => {
               throw new Error("Start drag on already dragging item");
             }}
