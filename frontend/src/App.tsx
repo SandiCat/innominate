@@ -86,25 +86,21 @@ interface NoteSearchResult {
 
 function SearchDrawer({
   searchResults,
-  draggedItem,
   onDragStart,
 }: {
   searchResults: NoteSearchResult[] | undefined;
-  draggedItem: Id<"notes"> | undefined;
   onDragStart: (e: MouseEvent, noteId: Id<"notes">) => void;
 }) {
   return (
     <div className="mt-2 bg-white/35 backdrop-blur-sm rounded-lg shadow-lg p-4 overflow-y-auto">
       <div className="space-y-4">
-        {searchResults?.map((note) => {
-          if (draggedItem === note._id) return null;
-          return (
-            <Note
-              noteId={note._id}
-              onDragStart={(e) => onDragStart(e, note._id)}
-            />
-          );
-        })}
+        {searchResults?.map((note) => (
+          <Note
+            key={note._id}
+            noteId={note._id}
+            onDragStart={(e) => onDragStart(e, note._id)}
+          />
+        ))}
       </div>
     </div>
   );
@@ -247,12 +243,6 @@ function App() {
         {searchQuery !== "" && (
           <SearchDrawer
             searchResults={searchResults}
-            draggedItem={match(dragState)
-              .with(
-                { type: "dragging-item", item: { type: "search-item" } },
-                ({ item: { noteId } }) => noteId
-              )
-              .otherwise(() => undefined)}
             onDragStart={handleDrawerDragStart}
           />
         )}
