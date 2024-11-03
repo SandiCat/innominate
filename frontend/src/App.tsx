@@ -53,14 +53,12 @@ function canvasToScreen(canvasPos: Vec2.Vec2, origin: Vec2.Vec2): Vec2.Vec2 {
 
 function SearchBar({ onSearch }: { onSearch: (query: string) => void }) {
   return (
-    <div className="absolute top-4 right-4 z-10">
-      <input
-        type="search"
-        placeholder="Search notes..."
-        className="px-4 py-2 rounded-lg border shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
-        onChange={(e) => onSearch(e.target.value)}
-      />
-    </div>
+    <input
+      type="search"
+      placeholder="Search notes..."
+      className="w-full px-4 py-2 rounded-lg border shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+      onChange={(e) => onSearch(e.target.value)}
+    />
   );
 }
 
@@ -76,7 +74,7 @@ function SearchDrawer({
   if (!isOpen) return null;
 
   return (
-    <div className="absolute right-0 top-0 h-full w-80 bg-white shadow-lg p-4 overflow-y-auto">
+    <div className="mt-2 bg-white/35 backdrop-blur-sm rounded-lg shadow-lg p-4 overflow-y-auto">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold">Search Results</h2>
         <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
@@ -85,9 +83,7 @@ function SearchDrawer({
       </div>
       <div className="space-y-4">
         {searchResults?.map((note) => (
-          <div key={note._id} className="border rounded p-2">
-            <Note noteId={note._id} onDragStart={() => {}} />
-          </div>
+          <Note noteId={note._id} onDragStart={() => {}} />
         ))}
       </div>
     </div>
@@ -198,12 +194,14 @@ function App() {
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-blue-50 relative">
-      <SearchBar onSearch={handleSearch} />
-      <SearchDrawer
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        searchResults={searchResults}
-      />
+      <div className="fixed top-4 right-4 w-80 z-10 flex flex-col">
+        <SearchBar onSearch={handleSearch} />
+        <SearchDrawer
+          isOpen={isDrawerOpen}
+          onClose={() => setIsDrawerOpen(false)}
+          searchResults={searchResults}
+        />
+      </div>
       <div
         className="w-screen h-screen overflow-hidden"
         onMouseDown={handleCanvasMouseDown}
