@@ -6,6 +6,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { Note } from "./components/Note";
 import { CanvasItem } from "./types";
+import { NoteTree } from "./components/NoteTree";
 const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID as Id<"users">;
 
 type DragState =
@@ -37,7 +38,7 @@ function CanvasItemComponent({ id, position, onDragStart }: CanvasItemProps) {
         top: position.y,
       }}
     >
-      <Note noteId={noteId} onDragStart={onDragStart} />
+      <NoteTree rootNodeId={noteId} onDragStart={onDragStart} />
     </div>
   );
 }

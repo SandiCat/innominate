@@ -10,34 +10,13 @@ export const get = query({
   },
 });
 
-const getChildren = async (ctx: QueryCtx, noteId: Id<"notes">) => {
-  return await ctx.db
-    .query("notes")
-    .withIndex("by_parent", (q) => q.eq("parentId", noteId))
-    .collect();
-};
-
-const constructTree = async (
-  ctx: QueryCtx,
-  noteId: Id<"notes">
-): Promise<NoteTree> => {
-  const note = await ctx.db.get(noteId);
-  if (!note) throw new Error("Note not found");
-  const children = await getChildren(ctx, noteId);
-  const childTrees: NoteTree[] = await Promise.all(
-    children.map((child) => constructTree(ctx, child._id))
-  );
-  return {
-    id: note._id,
-    content: note.content,
-    children: childTrees,
-  };
-};
-
-export const getTree = query({
-  args: { rootNodeId: v.id("notes") },
-  handler: async (ctx, { rootNodeId }) => {
-    return await constructTree(ctx, rootNodeId);
+export const getChildren = query({
+  args: { noteId: v.id("notes") },
+  handler: async (ctx, { noteId }) => {
+    return await ctx.db
+      .query("notes")
+      .withIndex("by_parent", (q) => q.eq("parentId", noteId))
+      .collect();
   },
 });
 
@@ -58,6 +37,21 @@ export const create = mutation({
     return await ctx.db.insert("notes", {
       content,
       userId,
+    });
+  },
+});
+
+export const createChild = mutation({
+  args: {
+    parentId: v.id("notes"),
+    userId: v.id("users"),
+    content: v.string(),
+  },
+  handler: async (ctx, { parentId, userId, content }) => {
+    return await ctx.db.insert("notes", {
+      content,
+      userId,
+      parentId,
     });
   },
 });

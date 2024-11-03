@@ -1,6 +1,5 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import * as types from "./types";
 
 export default defineSchema({
   users: defineTable({}), // just the ID

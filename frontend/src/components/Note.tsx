@@ -17,6 +17,7 @@ export function Note({ noteId, onDragStart }: NoteProps) {
   const [state, setState] = useState<NoteState>({ mode: "viewing" });
   const note = useQuery(api.notes.get, { noteId });
   const updateNote = useMutation(api.notes.update);
+  const createChild = useMutation(api.notes.createChild);
 
   if (!note) return null;
 
@@ -26,24 +27,41 @@ export function Note({ noteId, onDragStart }: NoteProps) {
                  bg-white rounded-lg shadow-lg cursor-grab relative"
       onMouseDown={onDragStart}
     >
-      <button
-        className="absolute top-2 right-2 p-1 rounded hover:bg-gray-100"
-        onMouseDown={(e) => e.stopPropagation()}
-        onClick={async (e) => {
-          e.stopPropagation();
-          match(state)
-            .with({ mode: "editing" }, async ({ draftContent }) => {
-              await updateNote({ noteId, content: draftContent });
-              setState({ mode: "viewing" });
-            })
-            .with({ mode: "viewing" }, () => {
-              setState({ mode: "editing", draftContent: note.content });
-            })
-            .exhaustive();
-        }}
-      >
-        {state.mode === "editing" ? "✓" : "✎"}
-      </button>
+      <div className="absolute top-2 right-2 flex gap-1">
+        <button
+          className="p-1 rounded hover:bg-gray-100"
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={async (e) => {
+            console.log("creating child");
+            e.stopPropagation();
+            await createChild({
+              parentId: noteId,
+              userId: note.userId,
+              content: "",
+            });
+          }}
+        >
+          ↩️
+        </button>
+        <button
+          className="p-1 rounded hover:bg-gray-100"
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={async (e) => {
+            e.stopPropagation();
+            match(state)
+              .with({ mode: "editing" }, async ({ draftContent }) => {
+                await updateNote({ noteId, content: draftContent });
+                setState({ mode: "viewing" });
+              })
+              .with({ mode: "viewing" }, () => {
+                setState({ mode: "editing", draftContent: note.content });
+              })
+              .exhaustive();
+          }}
+        >
+          {state.mode === "editing" ? "✓" : "✎"}
+        </button>
+      </div>
       <div className="p-4">
         {state.mode === "editing" ? (
           <textarea
