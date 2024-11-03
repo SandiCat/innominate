@@ -28,9 +28,4 @@ export default defineSchema({
   // })
   //   .index("by_canvas", ["canvasId"])
   //   .index("by_note", ["noteId"]),
-  // just for testing:
-  counters: defineTable({
-    value: v.number(),
-    name: v.string(),
-  }).index("by_name", ["name"]),
 });

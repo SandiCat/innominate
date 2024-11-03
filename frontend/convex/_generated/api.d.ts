@@ -14,6 +14,7 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as auth from "../auth.js";
+import type * as canvasItems from "../canvasItems.js";
 import type * as canvases from "../canvases.js";
 import type * as counters from "../counters.js";
 import type * as http from "../http.js";
@@ -30,6 +31,7 @@ import type * as types from "../types.js";
  */
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  canvasItems: typeof canvasItems;
   canvases: typeof canvases;
   counters: typeof counters;
   http: typeof http;

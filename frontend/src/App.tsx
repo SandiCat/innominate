@@ -1,12 +1,11 @@
-import { useState, MouseEvent, useRef } from "react";
+import { useState, MouseEvent, useRef, useEffect } from "react";
 import { Map } from "immutable";
 import * as Vec2 from "./lib/Vec2";
 import { match } from "ts-pattern";
 import { Id } from "../convex/_generated/dataModel";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { Note } from "./components/Note";
-import { useLocalValue } from "./utils/convex";
 
 const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID as Id<"users">;
 
@@ -15,18 +14,26 @@ type DragState =
   | { type: "dragging-canvas"; lastPosition: Vec2.Vec2 }
   | {
       type: "dragging-item";
-      position: Vec2.Vec2;
-      noteId: Id<"notes">;
+      canvasItem: CanvasItem;
       offset: Vec2.Vec2;
     };
 
-interface CanvasItemProps {
+interface CanvasItem {
+  id: Id<"canvasItems">;
   position: Vec2.Vec2;
-  noteId: Id<"notes">;
+}
+
+interface CanvasItemProps {
+  id: Id<"canvasItems">;
   onDragStart: (e: MouseEvent) => void;
 }
 
-function CanvasItem({ position, noteId, onDragStart }: CanvasItemProps) {
+function CanvasItem({ id, onDragStart }: CanvasItemProps) {
+  const canvasItem = useQuery(api.canvasItems.get, { id });
+
+  if (!canvasItem) return null;
+  const { position, noteId } = canvasItem;
+
   return (
     <div
       className="absolute"
@@ -50,18 +57,31 @@ function canvasToScreen(canvasPos: Vec2.Vec2, origin: Vec2.Vec2): Vec2.Vec2 {
 
 function App() {
   const [origin, setOrigin] = useState<Vec2.Vec2>({ x: 0, y: 0 });
-  const [positions, setPositions] = useLocalValue(
-    api.canvases.canvasForUser,
-    DEV_USER_ID,
-    api.canvases.persistUserCanvas,
-    1000
-  );
   const [dragState, setDragState] = useState<DragState>({ type: "idle" });
 
-  const createNote = useMutation(api.notes.create);
+  const createNoteOnCanvas = useMutation(api.canvasItems.createNoteOnCanvas);
+  const setPosition = useMutation(api.canvasItems.setPosition);
+  const createCanvas = useMutation(api.canvases.createCanvas);
+  const canvas = useQuery(api.canvases.getCanvasForUser, {
+    userId: DEV_USER_ID,
+  });
 
-  if (positions === undefined) {
+  // create the canvas if it does not exist
+  useEffect(() => {
+    async function createCanvasIfNeeded() {
+      if (canvas === null) {
+        await createCanvas({ userId: DEV_USER_ID });
+      }
+    }
+
+    createCanvasIfNeeded();
+  }, [canvas, createCanvas]);
+
+  if (canvas === undefined) {
     return <div className="p-4">Loading canvas...</div>;
+  }
+  if (canvas === null) {
+    return <div className="p-4">Creating canvas...</div>;
   }
 
   const handleCanvasMouseDown = (e: MouseEvent) => {
@@ -71,22 +91,21 @@ function App() {
     });
   };
 
-  const handleItemMouseDown = (e: MouseEvent, noteId: Id<"notes">) => {
+  const handleItemMouseDown = async (e: MouseEvent, canvasItem: CanvasItem) => {
     e.stopPropagation();
-    const position = positions.get(noteId);
-    if (!position) throw new Error(`Position for note ${noteId} not found`);
     if (dragState.type !== "idle") throw new Error("Must be in idle state");
 
     const mousePos = Vec2.fromMouseEvent(e);
-    const offset = Vec2.subtract(canvasToScreen(position, origin), mousePos);
+    const offset = Vec2.subtract(
+      canvasToScreen(canvasItem.position, origin),
+      mousePos
+    );
 
     setDragState({
       type: "dragging-item",
-      noteId,
-      position,
+      canvasItem,
       offset,
     });
-    setPositions(positions.remove(noteId));
   };
 
   const handleMouseMove = (e: MouseEvent) => {
@@ -106,7 +125,7 @@ function App() {
         );
         setDragState({
           ...state,
-          position: newPosition,
+          canvasItem: { ...state.canvasItem, position: newPosition },
         });
       })
       .exhaustive();
@@ -115,7 +134,7 @@ function App() {
   const handleMouseUp = () => {
     match(dragState)
       .with({ type: "dragging-item" }, (state) => {
-        setPositions(positions.set(state.noteId, state.position));
+        setPosition(state.canvasItem);
       })
       .otherwise(() => {});
 
@@ -126,8 +145,7 @@ function App() {
     const mousePos = Vec2.fromMouseEvent(e);
     const canvasPos = screenToCanvas(mousePos, origin);
 
-    const newNoteId = await createNote({ content: "", userId: DEV_USER_ID });
-    setPositions(positions.set(newNoteId, canvasPos));
+    await createNoteOnCanvas({ canvasId: canvas.id, position: canvasPos });
   };
 
   return (
@@ -144,18 +162,25 @@ function App() {
           transform: `translate(${origin.x}px, ${origin.y}px)`,
         }}
       >
-        {positions.entrySeq().map(([noteId, position]) => (
-          <CanvasItem
-            key={noteId}
-            noteId={noteId}
-            position={position}
-            onDragStart={(e) => handleItemMouseDown(e, noteId)}
-          />
-        ))}
+        {canvas.items.map((canvasItem) => {
+          if (
+            dragState.type === "dragging-item" &&
+            dragState.canvasItem.id === canvasItem.id
+          ) {
+            return null;
+          }
+
+          return (
+            <CanvasItem
+              key={canvasItem.id}
+              id={canvasItem.id}
+              onDragStart={(e) => handleItemMouseDown(e, canvasItem)}
+            />
+          );
+        })}
         {dragState.type === "dragging-item" && (
           <CanvasItem
-            noteId={dragState.noteId}
-            position={dragState.position}
+            id={dragState.canvasItem.id}
             onDragStart={() => {
               throw new Error("Start drag on already dragging item");
             }}
