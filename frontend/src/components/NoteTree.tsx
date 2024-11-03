@@ -1,12 +1,10 @@
 import { Note } from "./Note";
 import * as Tree from "../lib/Tree";
-
-type NoteId = string;
-type NoteContent = string;
+import { Id } from "../../convex/_generated/dataModel";
 
 interface NoteTreeProps {
-  tree: Tree.Tree<NoteId, NoteContent>;
-  onContentChange?: (noteId: NoteId, content: string) => void;
+  rootNodeId: Id<"notes">;
+  onDragStart;
 }
 
 export function RenderTree(root: NoteId, tree: Tree.Tree<NoteId, NoteContent>) {

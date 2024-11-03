@@ -1,12 +1,11 @@
 import { useState, MouseEvent, useRef, useEffect } from "react";
-import { Map } from "immutable";
 import * as Vec2 from "./lib/Vec2";
 import { match } from "ts-pattern";
 import { Id } from "../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { Note } from "./components/Note";
-
+import { CanvasItem } from "./types";
 const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID as Id<"users">;
 
 type DragState =
@@ -18,18 +17,13 @@ type DragState =
       offset: Vec2.Vec2;
     };
 
-interface CanvasItem {
-  id: Id<"canvasItems">;
-  position: Vec2.Vec2;
-}
-
 interface CanvasItemProps {
   id: Id<"canvasItems">;
   position: Vec2.Vec2;
   onDragStart: (e: MouseEvent) => void;
 }
 
-function CanvasItem({ id, position, onDragStart }: CanvasItemProps) {
+function CanvasItemComponent({ id, position, onDragStart }: CanvasItemProps) {
   const canvasItem = useQuery(api.canvasItems.get, { id });
 
   if (!canvasItem) return null;
@@ -170,7 +164,7 @@ function App() {
           }
 
           return (
-            <CanvasItem
+            <CanvasItemComponent
               key={canvasItem.id}
               id={canvasItem.id}
               position={canvasItem.position}
@@ -179,7 +173,7 @@ function App() {
           );
         })}
         {dragState.type === "dragging-item" && (
-          <CanvasItem
+          <CanvasItemComponent
             id={dragState.canvasItem.id}
             position={dragState.canvasItem.position}
             onDragStart={() => {

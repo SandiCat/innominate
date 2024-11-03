@@ -8,7 +8,9 @@ export default defineSchema({
     content: v.string(),
     parentId: v.optional(v.id("notes")),
     userId: v.id("users"),
-  }).index("by_user", ["userId"]),
+  })
+    .index("by_user", ["userId"])
+    .index("by_parent", ["parentId"]),
   canvases: defineTable({
     userId: v.id("users"),
   }).index("by_user", ["userId"]),
