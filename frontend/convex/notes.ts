@@ -55,3 +55,19 @@ export const createChild = mutation({
     });
   },
 });
+
+export const search = query({
+  args: {
+    query: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, { query, userId }) => {
+    if (!query.trim()) return [];
+    return await ctx.db
+      .query("notes")
+      .withSearchIndex("search_content", (q) =>
+        q.search("content", query).eq("userId", userId)
+      )
+      .take(10);
+  },
+});

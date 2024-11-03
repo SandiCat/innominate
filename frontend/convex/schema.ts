@@ -9,7 +9,11 @@ export default defineSchema({
     userId: v.id("users"),
   })
     .index("by_user", ["userId"])
-    .index("by_parent", ["parentId"]),
+    .index("by_parent", ["parentId"])
+    .searchIndex("search_content", {
+      searchField: "content",
+      filterFields: ["userId"],
+    }),
   canvases: defineTable({
     userId: v.id("users"),
   }).index("by_user", ["userId"]),

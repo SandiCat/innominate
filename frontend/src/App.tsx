@@ -51,9 +51,58 @@ function canvasToScreen(canvasPos: Vec2.Vec2, origin: Vec2.Vec2): Vec2.Vec2 {
   return Vec2.add(canvasPos, origin);
 }
 
+function SearchBar({ onSearch }: { onSearch: (query: string) => void }) {
+  return (
+    <div className="absolute top-4 right-4 z-10">
+      <input
+        type="search"
+        placeholder="Search notes..."
+        className="px-4 py-2 rounded-lg border shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+        onChange={(e) => onSearch(e.target.value)}
+      />
+    </div>
+  );
+}
+
+function SearchDrawer({
+  isOpen,
+  onClose,
+  searchResults,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  searchResults: any[] | undefined;
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="absolute right-0 top-0 h-full w-80 bg-white shadow-lg p-4 overflow-y-auto">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold">Search Results</h2>
+        <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+          ✕
+        </button>
+      </div>
+      <div className="space-y-4">
+        {searchResults?.map((note) => (
+          <div key={note._id} className="border rounded p-2">
+            <Note noteId={note._id} onDragStart={() => {}} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [origin, setOrigin] = useState<Vec2.Vec2>({ x: 0, y: 0 });
   const [dragState, setDragState] = useState<DragState>({ type: "idle" });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const searchResults = useQuery(api.notes.search, {
+    query: searchQuery,
+    userId: DEV_USER_ID,
+  });
 
   const createNoteOnCanvas = useMutation(api.canvasItems.createNoteOnCanvas);
   const setPosition = useMutation(api.canvasItems.setPosition);
@@ -142,46 +191,59 @@ function App() {
     await createNoteOnCanvas({ canvasId: canvas.id, position: canvasPos });
   };
 
-  return (
-    <div
-      className="w-screen h-screen overflow-hidden bg-blue-50"
-      onMouseDown={handleCanvasMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-      onDoubleClick={handleDoubleClick}
-    >
-      <div
-        style={{
-          transform: `translate(${origin.x}px, ${origin.y}px)`,
-        }}
-      >
-        {canvas.items.map((canvasItem) => {
-          if (
-            dragState.type === "dragging-item" &&
-            dragState.canvasItem.id === canvasItem.id
-          ) {
-            return null;
-          }
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    setIsDrawerOpen(!!query);
+  };
 
-          return (
+  return (
+    <div className="w-screen h-screen overflow-hidden bg-blue-50 relative">
+      <SearchBar onSearch={handleSearch} />
+      <SearchDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        searchResults={searchResults}
+      />
+      <div
+        className="w-screen h-screen overflow-hidden"
+        onMouseDown={handleCanvasMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onDoubleClick={handleDoubleClick}
+      >
+        <div
+          style={{
+            transform: `translate(${origin.x}px, ${origin.y}px)`,
+          }}
+        >
+          {canvas.items.map((canvasItem) => {
+            if (
+              dragState.type === "dragging-item" &&
+              dragState.canvasItem.id === canvasItem.id
+            ) {
+              return null;
+            }
+
+            return (
+              <CanvasItemComponent
+                key={canvasItem.id}
+                id={canvasItem.id}
+                position={canvasItem.position}
+                onDragStart={(e) => handleItemMouseDown(e, canvasItem)}
+              />
+            );
+          })}
+          {dragState.type === "dragging-item" && (
             <CanvasItemComponent
-              key={canvasItem.id}
-              id={canvasItem.id}
-              position={canvasItem.position}
-              onDragStart={(e) => handleItemMouseDown(e, canvasItem)}
+              id={dragState.canvasItem.id}
+              position={dragState.canvasItem.position}
+              onDragStart={() => {
+                throw new Error("Start drag on already dragging item");
+              }}
             />
-          );
-        })}
-        {dragState.type === "dragging-item" && (
-          <CanvasItemComponent
-            id={dragState.canvasItem.id}
-            position={dragState.canvasItem.position}
-            onDragStart={() => {
-              throw new Error("Start drag on already dragging item");
-            }}
-          />
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
