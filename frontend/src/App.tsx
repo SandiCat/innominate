@@ -1,4 +1,4 @@
-import { useState, MouseEvent, useRef, useEffect } from "react";
+import { useState, MouseEvent, useEffect } from "react";
 import * as Vec2 from "./lib/Vec2";
 import { match } from "ts-pattern";
 import { Id } from "../convex/_generated/dataModel";
@@ -9,14 +9,38 @@ import { CanvasItem } from "./types";
 import { NoteTree } from "./components/NoteTree";
 const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID as Id<"users">;
 
+type ItemDragged =
+  | { type: "canvas-item"; canvasItemId: Id<"canvasItems"> }
+  | { type: "search-item"; noteId: Id<"notes"> };
+
 type DragState =
   | { type: "idle" }
   | { type: "dragging-canvas"; lastPosition: Vec2.Vec2 }
   | {
       type: "dragging-item";
-      canvasItem: CanvasItem;
+      item: ItemDragged;
+      position: Vec2.Vec2;
       offset: Vec2.Vec2;
     };
+
+interface PositionedProps {
+  position: Vec2.Vec2;
+  children: React.ReactNode;
+}
+
+function Positioned({ position, children }: PositionedProps) {
+  return (
+    <div
+      className="absolute"
+      style={{
+        left: position.x,
+        top: position.y,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
 interface CanvasItemProps {
   id: Id<"canvasItems">;
@@ -31,15 +55,9 @@ function CanvasItemComponent({ id, position, onDragStart }: CanvasItemProps) {
   const { noteId } = canvasItem;
 
   return (
-    <div
-      className="absolute"
-      style={{
-        left: position.x,
-        top: position.y,
-      }}
-    >
+    <Positioned position={position}>
       <NoteTree rootNodeId={noteId} onDragStart={onDragStart} />
-    </div>
+    </Positioned>
   );
 }
 
@@ -62,45 +80,49 @@ function SearchBar({ onSearch }: { onSearch: (query: string) => void }) {
   );
 }
 
-function SearchDrawer({
-  isOpen,
-  onClose,
-  searchResults,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  searchResults: any[] | undefined;
-}) {
-  if (!isOpen) return null;
+interface NoteSearchResult {
+  _id: Id<"notes">;
+}
 
+function SearchDrawer({
+  searchResults,
+  draggedItem,
+  onDragStart,
+}: {
+  searchResults: NoteSearchResult[] | undefined;
+  draggedItem: Id<"notes"> | undefined;
+  onDragStart: (e: MouseEvent, noteId: Id<"notes">) => void;
+}) {
   return (
     <div className="mt-2 bg-white/35 backdrop-blur-sm rounded-lg shadow-lg p-4 overflow-y-auto">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">Search Results</h2>
-        <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-          ✕
-        </button>
-      </div>
       <div className="space-y-4">
-        {searchResults?.map((note) => (
-          <Note noteId={note._id} onDragStart={() => {}} />
-        ))}
+        {searchResults?.map((note) => {
+          if (draggedItem === note._id) return null;
+          return (
+            <Note
+              noteId={note._id}
+              onDragStart={(e) => onDragStart(e, note._id)}
+            />
+          );
+        })}
       </div>
     </div>
   );
 }
 
+const SEARCH_DRAG_OFFSET: Vec2.Vec2 = { x: -50, y: 0 };
+
 function App() {
   const [origin, setOrigin] = useState<Vec2.Vec2>({ x: 0, y: 0 });
   const [dragState, setDragState] = useState<DragState>({ type: "idle" });
   const [searchQuery, setSearchQuery] = useState("");
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const searchResults = useQuery(api.notes.search, {
     query: searchQuery,
     userId: DEV_USER_ID,
   });
 
   const createNoteOnCanvas = useMutation(api.canvasItems.createNoteOnCanvas);
+  const addNoteToCanvas = useMutation(api.canvasItems.addNoteToCanvas);
   const setPosition = useMutation(api.canvasItems.setPosition);
   const createCanvas = useMutation(api.canvases.createCanvas);
   const canvas = useQuery(api.canvases.getCanvasForUser, {
@@ -144,7 +166,8 @@ function App() {
 
     setDragState({
       type: "dragging-item",
-      canvasItem,
+      item: { type: "canvas-item", canvasItemId: canvasItem.id },
+      position: canvasItem.position,
       offset,
     });
   };
@@ -166,7 +189,7 @@ function App() {
         );
         setDragState({
           ...state,
-          canvasItem: { ...state.canvasItem, position: newPosition },
+          position: newPosition,
         });
       })
       .exhaustive();
@@ -174,7 +197,21 @@ function App() {
 
   const handleMouseUp = async () => {
     if (dragState.type === "dragging-item") {
-      await setPosition(dragState.canvasItem);
+      await match(dragState.item)
+        .with({ type: "canvas-item" }, async (item) => {
+          await setPosition({
+            id: item.canvasItemId,
+            position: dragState.position,
+          });
+        })
+        .with({ type: "search-item" }, async (item) => {
+          await addNoteToCanvas({
+            canvasId: canvas.id,
+            position: dragState.position,
+            noteId: item.noteId,
+          });
+        })
+        .exhaustive();
     }
 
     setDragState({ type: "idle" });
@@ -189,18 +226,36 @@ function App() {
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    setIsDrawerOpen(!!query);
+  };
+
+  const handleDrawerDragStart = (e: MouseEvent, noteId: Id<"notes">) => {
+    const mousePos = Vec2.fromMouseEvent(e);
+    const canvasPos = screenToCanvas(mousePos, origin);
+
+    setDragState({
+      type: "dragging-item",
+      item: { type: "search-item", noteId },
+      position: canvasPos,
+      offset: SEARCH_DRAG_OFFSET,
+    });
   };
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-blue-50 relative">
       <div className="fixed top-4 right-4 w-80 z-10 flex flex-col">
         <SearchBar onSearch={handleSearch} />
-        <SearchDrawer
-          isOpen={isDrawerOpen}
-          onClose={() => setIsDrawerOpen(false)}
-          searchResults={searchResults}
-        />
+        {searchQuery !== "" && (
+          <SearchDrawer
+            searchResults={searchResults}
+            draggedItem={match(dragState)
+              .with(
+                { type: "dragging-item", item: { type: "search-item" } },
+                ({ item: { noteId } }) => noteId
+              )
+              .otherwise(() => undefined)}
+            onDragStart={handleDrawerDragStart}
+          />
+        )}
       </div>
       <div
         className="w-screen h-screen overflow-hidden"
@@ -218,7 +273,8 @@ function App() {
           {canvas.items.map((canvasItem) => {
             if (
               dragState.type === "dragging-item" &&
-              dragState.canvasItem.id === canvasItem.id
+              dragState.item.type === "canvas-item" &&
+              dragState.item.canvasItemId === canvasItem.id
             ) {
               return null;
             }
@@ -232,15 +288,25 @@ function App() {
               />
             );
           })}
-          {dragState.type === "dragging-item" && (
-            <CanvasItemComponent
-              id={dragState.canvasItem.id}
-              position={dragState.canvasItem.position}
-              onDragStart={() => {
-                throw new Error("Start drag on already dragging item");
-              }}
-            />
-          )}
+          {dragState.type === "dragging-item" &&
+            match(dragState.item)
+              .with({ type: "canvas-item" }, ({ canvasItemId }) => (
+                <CanvasItemComponent
+                  id={canvasItemId}
+                  position={dragState.position}
+                  onDragStart={() => {
+                    throw new Error("Start drag on already dragging item");
+                  }}
+                />
+              ))
+              .with({ type: "search-item" }, ({ noteId }) => (
+                <div className="z-20">
+                  <Positioned position={dragState.position}>
+                    <Note noteId={noteId} onDragStart={() => {}} />
+                  </Positioned>
+                </div>
+              ))
+              .exhaustive()}
         </div>
       </div>
     </div>

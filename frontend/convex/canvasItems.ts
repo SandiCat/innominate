@@ -52,3 +52,21 @@ export const createNoteOnCanvas = mutation({
     });
   },
 });
+
+export const addNoteToCanvas = mutation({
+  args: {
+    canvasId: v.id("canvases"),
+    noteId: v.id("notes"),
+    position: v.object({
+      x: v.number(),
+      y: v.number(),
+    }),
+  },
+  handler: async (ctx, { canvasId, noteId, position }) => {
+    await ctx.db.insert("canvasItems", {
+      canvasId,
+      rootNoteId: noteId,
+      position,
+    });
+  },
+});

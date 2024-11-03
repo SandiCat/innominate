@@ -1,7 +1,5 @@
-import { mutation, query, QueryCtx } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { Id } from "./_generated/dataModel";
-import { NoteTree } from "../src/types";
 
 export const get = query({
   args: { noteId: v.id("notes") },
