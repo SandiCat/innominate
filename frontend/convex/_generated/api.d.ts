@@ -18,6 +18,8 @@ import type * as canvasItems from "../canvasItems.js";
 import type * as canvases from "../canvases.js";
 import type * as counters from "../counters.js";
 import type * as http from "../http.js";
+import type * as human_hash_human_hash from "../human_hash/human_hash.js";
+import type * as human_hash_words from "../human_hash/words.js";
 import type * as notes from "../notes.js";
 import type * as types from "../types.js";
 
@@ -35,6 +37,8 @@ declare const fullApi: ApiFromModules<{
   canvases: typeof canvases;
   counters: typeof counters;
   http: typeof http;
+  "human_hash/human_hash": typeof human_hash_human_hash;
+  "human_hash/words": typeof human_hash_words;
   notes: typeof notes;
   types: typeof types;
 }>;

@@ -1,7 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { parseNoteBody } from "../src/types";
-import { Id } from "./_generated/dataModel";
+import { humanReadableID } from "./human_hash/human_hash";
 
 export const get = query({
   args: { noteId: v.id("notes") },
@@ -50,12 +50,22 @@ export const update = mutation({
   },
 });
 
+export const deleteNote = mutation({
+  args: { noteId: v.id("notes") },
+  handler: async (ctx, { noteId }) => {
+    await ctx.db.delete(noteId);
+  },
+});
+
+// TODO: abstract human readable ID generation
 export const create = mutation({
   args: { userId: v.id("users"), content: v.string() },
   handler: async (ctx, { userId, content }) => {
+    const humanReadableId = humanReadableID();
     return await ctx.db.insert("notes", {
       content,
       userId,
+      humanReadableId,
     });
   },
 });
@@ -67,10 +77,12 @@ export const createChild = mutation({
     content: v.string(),
   },
   handler: async (ctx, { parentId, userId, content }) => {
+    const humanReadableId = humanReadableID();
     return await ctx.db.insert("notes", {
       content,
       userId,
       parentId,
+      humanReadableId,
     });
   },
 });

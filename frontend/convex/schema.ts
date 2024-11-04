@@ -7,6 +7,7 @@ export default defineSchema({
     content: v.string(),
     parentId: v.optional(v.id("notes")),
     userId: v.id("users"),
+    humanReadableId: v.string(),
   })
     .index("by_user", ["userId"])
     .index("by_parent", ["parentId"])

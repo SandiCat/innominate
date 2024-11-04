@@ -4,6 +4,9 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { match } from "ts-pattern";
 import { parseNoteBody } from "../types";
+import { FiCheck, FiEdit2 } from "react-icons/fi";
+import { BsReply } from "react-icons/bs";
+import { FaReply, FaTrash } from "react-icons/fa";
 
 interface NoteProps {
   noteId: Id<"notes">;
@@ -54,18 +57,15 @@ function EditMode({
   );
 }
 
-function noteHumanId(noteId: Id<"notes">): string {
-  return noteId.slice(-6);
-}
-
 function MentionSpan({ noteId }: { noteId: Id<"notes"> }) {
   const note = useQuery(api.notes.get, { noteId });
+  if (!note) return null;
   return (
     <span
       className="bg-blue-100 px-1 rounded cursor-help"
       title={note?.content || "Loading..."}
     >
-      @{noteHumanId(noteId)}
+      @{note.humanReadableId}
     </span>
   );
 }
@@ -98,7 +98,7 @@ function Backlinks({ noteId }: { noteId: Id<"notes"> }) {
         <span key={note._id}>
           {i > 0 && ", "}
           <span className="hover:underline cursor-help" title={note.content}>
-            @{noteHumanId(note._id)}
+            @{note.humanReadableId}
           </span>
         </span>
       ))}
@@ -108,6 +108,7 @@ function Backlinks({ noteId }: { noteId: Id<"notes"> }) {
 
 export function Note({ noteId, onDragStart }: NoteProps) {
   const [state, setState] = useState<NoteState>({ mode: "viewing" });
+  const [isHovered, setIsHovered] = useState(false);
   const note = useQuery(api.notes.get, { noteId });
   const updateNote = useMutation(api.notes.update);
 
@@ -132,13 +133,17 @@ export function Note({ noteId, onDragStart }: NoteProps) {
     <div
       className="w-[200px] min-h-[120px] bg-white rounded-lg shadow-lg cursor-grab relative"
       onMouseDown={onDragStart}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      <NoteButtons
-        noteId={noteId}
-        userId={note.userId}
-        isEditing={state.mode === "editing"}
-        toggleMode={toggleMode}
-      />
+      {isHovered && (
+        <NoteButtons
+          noteId={noteId}
+          userId={note.userId}
+          isEditing={state.mode === "editing"}
+          toggleMode={toggleMode}
+        />
+      )}
       <div className="p-4">
         {state.mode === "editing" ? (
           <EditMode
@@ -166,35 +171,49 @@ function NoteButtons({
   toggleMode: () => Promise<void>;
 }) {
   const createChild = useMutation(api.notes.createChild);
+  const deleteNote = useMutation(api.notes.deleteNote);
 
-  const handleCreateChild = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleCreateChild = async () => {
     await createChild({ parentId: noteId, userId, content: "" });
   };
 
-  const handleToggleMode = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleToggleMode = async () => {
     await toggleMode();
   };
 
-  const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
+  const handleDelete = async () => {
+    await deleteNote({ noteId });
+  };
 
   return (
     <div className="absolute top-2 right-2 flex gap-1">
-      <button
-        className="p-1 rounded hover:bg-gray-100"
-        onMouseDown={stopPropagation}
-        onClick={handleCreateChild}
-      >
-        ↩️
-      </button>
-      <button
-        className="p-1 rounded hover:bg-gray-100"
-        onMouseDown={stopPropagation}
+      <ButtonIcon icon={<FaTrash />} onClick={handleDelete} />
+      <ButtonIcon icon={<FaReply />} onClick={handleCreateChild} />
+      <ButtonIcon
+        icon={isEditing ? <FiCheck /> : <FiEdit2 />}
         onClick={handleToggleMode}
-      >
-        {isEditing ? "✓" : "✎"}
-      </button>
+      />
+    </div>
+  );
+}
+
+function ButtonIcon({
+  icon,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  onClick: (e: React.MouseEvent) => Promise<void>;
+}) {
+  return (
+    <div
+      className="p-1 rounded hover:bg-gray-100"
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={async (e) => {
+        e.stopPropagation();
+        await onClick(e);
+      }}
+    >
+      {icon}
     </div>
   );
 }
