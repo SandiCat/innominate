@@ -1,7 +1,12 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { ConvexAuthProvider } from "@convex-dev/auth/react";
-import { ConvexReactClient } from "convex/react";
+import {
+  Authenticated,
+  ConvexReactClient,
+  Unauthenticated,
+} from "convex/react";
+import { ClerkProvider, SignInButton, useAuth } from "@clerk/clerk-react";
+import { ConvexProviderWithClerk } from "convex/react-clerk";
 
 import "./index.css";
 import App from "./App";
@@ -10,8 +15,17 @@ const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ConvexAuthProvider client={convex}>
-      <App />
-    </ConvexAuthProvider>
+    <ClerkProvider publishableKey="pk_test_YW11c2VkLWhpcHBvLTg2LmNsZXJrLmFjY291bnRzLmRldiQ">
+      <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+        <main>
+          <Unauthenticated>
+            <SignInButton />
+          </Unauthenticated>
+          <Authenticated>
+            <App />
+          </Authenticated>
+        </main>
+      </ConvexProviderWithClerk>
+    </ClerkProvider>
   </StrictMode>
 );

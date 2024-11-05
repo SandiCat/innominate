@@ -1,4 +1,9 @@
-export async function userNameToId(userName: string): Promise<string> {
+const clientTransactionId =
+  "3FiGd66tJSHpBYJFNmsHROspSArFPyE3a6kg8Z1bBpjemswbLZeUAK+GuAph5p9mMwZwBt40aqvZLgAXr4kznp0zzT+O3w";
+const guestToken = "1853777281866436942";
+const guestId = "173072571369852004";
+
+export async function userNameToId(userName: string): Promise<string | null> {
   const url = new URL(
     "https://api.x.com/graphql/BQ6xjFU6Mgm-WhEP3OiT9w/UserByScreenName?variables=%7B%22screen_name%22%3A%22poetengineer__%22%7D&features=%7B%22hidden_profile_subscriptions_enabled%22%3Atrue%2C%22rweb_tipjar_consumption_enabled%22%3Atrue%2C%22responsive_web_graphql_exclude_directive_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22subscriptions_verification_info_is_identity_verified_enabled%22%3Atrue%2C%22subscriptions_verification_info_verified_since_enabled%22%3Atrue%2C%22highlights_tweets_tab_ui_enabled%22%3Atrue%2C%22responsive_web_twitter_article_notes_tab_enabled%22%3Atrue%2C%22subscriptions_feature_can_gift_premium%22%3Atrue%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%7D&fieldToggles=%7B%22withAuxiliaryUserLabels%22%3Afalse%7D"
   );
@@ -27,13 +32,11 @@ export async function userNameToId(userName: string): Promise<string> {
       "sec-fetch-mode": "cors",
       "sec-fetch-site": "same-site",
       "sec-gpc": "1",
-      "x-client-transaction-id":
-        "vhzYXcyLvaqpnyFGTKCvzcOA8BFa1PpwctMTbCNC9fndR7FlKwmtJ9T7iKC5x3lXLNcSZ7zWiUeUtRjnoL1xj6cq2Ts8vQ",
-      "x-guest-token": "1853477935769960792",
+      "x-client-transaction-id": clientTransactionId,
+      "x-guest-token": guestToken,
       "x-twitter-active-user": "yes",
       "x-twitter-client-language": "en",
-      cookie:
-        "guest_id=173072571369852004; night_mode=2; gt=1853477935769960792",
+      cookie: `guest_id=${guestId}; night_mode=2; gt=${guestToken}`,
       Referer: "https://x.com/",
       "Referrer-Policy": "strict-origin-when-cross-origin",
     },
@@ -42,6 +45,9 @@ export async function userNameToId(userName: string): Promise<string> {
   });
 
   const body = await response.json();
+  if (Object.keys(body.data).length === 0) {
+    return null;
+  }
   return body.data.user.result.rest_id;
 }
 
@@ -74,9 +80,8 @@ export async function fetchTweets(userId: string): Promise<any> {
       "sec-fetch-mode": "cors",
       "sec-fetch-site": "same-site",
       "sec-gpc": "1",
-      "x-client-transaction-id":
-        "ctAUkQBHcWZlU+2KgGxjAQ9MPN2WGDa8vh/foO+OOTURi32p58Vh6xg3RGx1C7Wb4Bjeq3DT5JLW3qXgIqbxSSz7F6+QcQ",
-      "x-guest-token": "1853477935769960792",
+      "x-client-transaction-id": clientTransactionId,
+      "x-guest-token": guestToken,
       "x-twitter-active-user": "yes",
       "x-twitter-client-language": "en",
     },

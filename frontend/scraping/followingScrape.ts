@@ -8,13 +8,46 @@ const followingListPath = "/home/x/innominate/data/following.txt";
 
 const followingList = fs.readFileSync(followingListPath, "utf-8").split("\n");
 
+// Exponential backoff retry wrapper
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  maxAttempts = 10,
+  baseDelay = 5000,
+  maxDelay = 5 * 60000
+): Promise<T> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (attempt === maxAttempts - 1) throw error;
+
+      const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
+      console.log(`Attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  throw new Error("Should not reach here");
+}
+
 for (const username of followingList) {
+  const outputPath = path.join(OUTPUT_FOLDER, `${username}.json`);
+
+  if (fs.existsSync(outputPath)) {
+    console.log(`Skipping @${username} - already scraped`);
+    continue;
+  }
+
   console.log("******************************");
   console.log(`Scraping @${username}`);
 
   try {
-    const userId = await twitterApi.userNameToId(username);
-    const tweets = await twitterApi.fetchTweets(userId);
+    const userId = await withRetry(() => twitterApi.userNameToId(username));
+    if (userId === null) {
+      console.log(`Account deleted: @${username}`);
+      continue;
+    }
+
+    const tweets = await withRetry(() => twitterApi.fetchTweets(userId));
 
     try {
       const instructions =
@@ -35,12 +68,11 @@ for (const username of followingList) {
       console.error(`Unexpected entries format @${username}: ${error}`);
     }
 
-    const outputPath = path.join(OUTPUT_FOLDER, `${username}.json`);
     fs.writeFileSync(outputPath, JSON.stringify(tweets, null, 2));
   } catch (error) {
     console.log(`Error scraping @${username}: ${error}`);
   }
 
-  // Wait 200ms before next request
-  await new Promise((resolve) => setTimeout(resolve, 200));
+  // Base delay between users
+  await new Promise((resolve) => setTimeout(resolve, 500));
 }
