@@ -4,6 +4,7 @@ import * as dotenv from "dotenv";
 import * as fs from "fs";
 import * as path from "path";
 import { parseTweet } from "./parseTweets";
+import { json } from "stream/consumers";
 
 // Load environment variables
 dotenv.config({ path: ".env.local" });
@@ -31,28 +32,42 @@ async function importTwitterData() {
         continue;
       }
 
-      let insertedUser = false;
+      // Collect all entries for this user
+      let tweets = [];
+      const allMedia = [];
+      let user = null;
 
       for (const entry of entries) {
         const parsed = parseTweet(entry);
         if (!parsed) continue;
 
-        const { tweet, media, user } = parsed;
+        const { tweet, media, user: parsedUser } = parsed;
+        if (parsedUser && !user) user = parsedUser;
 
-        // Only insert user once
-        if (user && !insertedUser) {
-          await client.mutation(api.twitter.functions.upsertUser, user);
-          insertedUser = true;
-        }
-
-        // Insert tweet
-        await client.mutation(api.twitter.functions.upsertTweet, tweet);
-
-        // Insert media
-        for (const m of media) {
-          await client.mutation(api.twitter.functions.upsertMedia, m);
-        }
+        tweets.push(tweet);
+        allMedia.push(...media);
       }
+
+      if (!user || tweets.length === 0) continue;
+
+      //   console.log(tweets);
+
+      tweets = tweets.slice(0, 3);
+      tweets = JSON.parse(JSON.stringify(tweets));
+      console.log(tweets);
+
+      // Batch insert all data for this user
+      await client.mutation(api.twitter.functions.upsertUser, user);
+      await client.mutation(api.twitter.functions.upsertTweets, { tweets });
+      if (allMedia.length > 0) {
+        await client.mutation(api.twitter.functions.upsertMediaBatch, {
+          media: allMedia,
+        });
+      }
+
+      console.log(
+        `Processed ${tweets.length} tweets and ${allMedia.length} media items for ${user.username}`
+      );
     } catch (error) {
       console.error(`Error processing ${file}:`, error);
     }
