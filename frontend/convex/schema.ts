@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { twitterTables } from "./twitter/schema";
 
 export default defineSchema({
   users: defineTable({}), // just the ID
@@ -40,4 +41,5 @@ export default defineSchema({
   // })
   //   .index("by_canvas", ["canvasId"])
   //   .index("by_note", ["noteId"]),
+  ...twitterTables,
 });
