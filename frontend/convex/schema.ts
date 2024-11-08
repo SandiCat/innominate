@@ -1,7 +1,7 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { twitterTables } from "./twitter/schema";
-
+import { vec2 } from "./types";
 export default defineSchema({
   users: defineTable({}), // just the ID
   notes: defineTable({
@@ -24,15 +24,15 @@ export default defineSchema({
     .index("by_to", ["to"]),
   canvases: defineTable({
     userId: v.id("users"),
+    origin: vec2,
   }).index("by_user", ["userId"]),
   canvasItems: defineTable({
     canvasId: v.id("canvases"),
     rootNoteId: v.id("notes"),
-    position: v.object({
-      x: v.number(),
-      y: v.number(),
-    }),
-  }).index("by_canvas", ["canvasId"]),
+    position: vec2,
+  })
+    .index("by_canvas", ["canvasId"])
+    .index("by_rootNote", ["rootNoteId"]),
   // noteUIStates: defineTable({
   //   noteId: v.id("notes"),
   //   // can have different state in different trees

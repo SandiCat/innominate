@@ -54,6 +54,15 @@ export const deleteNote = mutation({
   args: { noteId: v.id("notes") },
   handler: async (ctx, { noteId }) => {
     await ctx.db.delete(noteId);
+
+    // Delete associated canvas items
+    await ctx.db
+      .query("canvasItems")
+      .withIndex("by_rootNote", (q) => q.eq("rootNoteId", noteId))
+      .collect()
+      .then((canvasItems) =>
+        Promise.all(canvasItems.map((ci) => ctx.db.delete(ci._id)))
+      );
   },
 });
 

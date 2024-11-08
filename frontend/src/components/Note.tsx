@@ -112,8 +112,6 @@ export function Note({ noteId, onDragStart }: NoteProps) {
   const note = useQuery(api.notes.get, { noteId });
   const updateNote = useMutation(api.notes.update);
 
-  if (!note) return null;
-
   const toggleMode = async () => {
     await match(state)
       .with({ mode: "editing" }, async ({ draftContent }) => {
@@ -136,7 +134,7 @@ export function Note({ noteId, onDragStart }: NoteProps) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {isHovered && (
+      {isHovered && note && (
         <NoteButtons
           noteId={noteId}
           userId={note.userId}
@@ -151,7 +149,7 @@ export function Note({ noteId, onDragStart }: NoteProps) {
             onChange={handleContentChange}
           />
         ) : (
-          <ViewMode content={note.content} />
+          <ViewMode content={note ? note.content : ""} />
         )}
       </div>
       <Backlinks noteId={noteId} />

@@ -15,7 +15,12 @@ type ItemDragged =
 
 type DragState =
   | { type: "idle" }
-  | { type: "dragging-canvas"; lastPosition: Vec2.Vec2 }
+  | {
+      type: "dragging-canvas";
+      startMousePos: Vec2.Vec2;
+      startOrigin: Vec2.Vec2;
+      tempOrigin: Vec2.Vec2;
+    }
   | {
       type: "dragging-item";
       item: ItemDragged;
@@ -109,7 +114,6 @@ function SearchDrawer({
 const SEARCH_DRAG_OFFSET: Vec2.Vec2 = { x: -50, y: 0 };
 
 function App() {
-  const [origin, setOrigin] = useState<Vec2.Vec2>({ x: 0, y: 0 });
   const [dragState, setDragState] = useState<DragState>({ type: "idle" });
   const [searchQuery, setSearchQuery] = useState("");
   const searchResults = useQuery(api.notes.search, {
@@ -120,6 +124,7 @@ function App() {
   const createNoteOnCanvas = useMutation(api.canvasItems.createNoteOnCanvas);
   const addNoteToCanvas = useMutation(api.canvasItems.addNoteToCanvas);
   const setPosition = useMutation(api.canvasItems.setPosition);
+  const setCanvasOrigin = useMutation(api.canvases.setCanvasOrigin);
   const createCanvas = useMutation(api.canvases.createCanvas);
   const canvas = useQuery(api.canvases.getCanvasForUser, {
     userId: DEV_USER_ID,
@@ -143,10 +148,15 @@ function App() {
     return <div className="p-4">Creating canvas...</div>;
   }
 
+  const canvasOrigin =
+    dragState.type === "dragging-canvas" ? dragState.tempOrigin : canvas.origin;
+
   const handleCanvasMouseDown = (e: MouseEvent) => {
     setDragState({
       type: "dragging-canvas",
-      lastPosition: Vec2.fromMouseEvent(e),
+      startMousePos: Vec2.fromMouseEvent(e),
+      startOrigin: canvasOrigin,
+      tempOrigin: canvasOrigin,
     });
   };
 
@@ -156,7 +166,7 @@ function App() {
 
     const mousePos = Vec2.fromMouseEvent(e);
     const offset = Vec2.subtract(
-      canvasToScreen(canvasItem.position, origin),
+      canvasToScreen(canvasItem.position, canvasOrigin),
       mousePos
     );
 
@@ -174,14 +184,17 @@ function App() {
     match(dragState)
       .with({ type: "idle" }, () => {})
       .with({ type: "dragging-canvas" }, (state) => {
-        const delta = Vec2.subtract(mousePos, state.lastPosition);
-        setOrigin(Vec2.add(origin, delta));
-        setDragState({ ...state, lastPosition: mousePos });
+        const delta = Vec2.subtract(mousePos, state.startMousePos);
+        const newOrigin = Vec2.add(state.startOrigin, delta);
+        setDragState({
+          ...state,
+          tempOrigin: newOrigin,
+        });
       })
       .with({ type: "dragging-item" }, (state) => {
         const newPosition = screenToCanvas(
           Vec2.add(mousePos, state.offset),
-          origin
+          canvasOrigin
         );
         setDragState({
           ...state,
@@ -208,6 +221,11 @@ function App() {
           });
         })
         .exhaustive();
+    } else if (dragState.type === "dragging-canvas") {
+      await setCanvasOrigin({
+        canvasId: canvas.id,
+        origin: dragState.tempOrigin,
+      });
     }
 
     setDragState({ type: "idle" });
@@ -215,7 +233,7 @@ function App() {
 
   const handleDoubleClick = async (e: MouseEvent) => {
     const mousePos = Vec2.fromMouseEvent(e);
-    const canvasPos = screenToCanvas(mousePos, origin);
+    const canvasPos = screenToCanvas(mousePos, canvasOrigin);
 
     await createNoteOnCanvas({ canvasId: canvas.id, position: canvasPos });
   };
@@ -226,7 +244,7 @@ function App() {
 
   const handleDrawerDragStart = (e: MouseEvent, noteId: Id<"notes">) => {
     const mousePos = Vec2.fromMouseEvent(e);
-    const canvasPos = screenToCanvas(mousePos, origin);
+    const canvasPos = screenToCanvas(mousePos, canvasOrigin);
 
     setDragState({
       type: "dragging-item",
@@ -257,7 +275,7 @@ function App() {
       >
         <div
           style={{
-            transform: `translate(${origin.x}px, ${origin.y}px)`,
+            transform: `translate(${canvasOrigin.x}px, ${canvasOrigin.y}px)`,
           }}
         >
           {canvas.items.map((canvasItem) => {
