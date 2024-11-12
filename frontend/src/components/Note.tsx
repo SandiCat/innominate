@@ -6,32 +6,14 @@ import { match } from "ts-pattern";
 import { parseNoteBody } from "../types";
 import { FiCheck, FiEdit2 } from "react-icons/fi";
 import { BsReply } from "react-icons/bs";
-import { FaReply, FaTrash } from "react-icons/fa";
-
-interface NoteProps {
-  noteId: Id<"notes">;
-  onDragStart?: (e: React.MouseEvent) => void;
-}
-
-type NoteState =
-  | { mode: "viewing" }
-  | { mode: "editing"; draftContent: string };
-
-function useAutoResizingTextArea() {
-  const adjustHeight = (element: HTMLTextAreaElement) => {
-    element.style.height = "auto";
-    element.style.height = `${element.scrollHeight}px`;
-  };
-
-  return {
-    ref: (textArea: HTMLTextAreaElement | null) => {
-      if (textArea) adjustHeight(textArea);
-    },
-    onInput: (e: React.FormEvent<HTMLTextAreaElement>) => {
-      adjustHeight(e.target as HTMLTextAreaElement);
-    },
-  };
-}
+import { MdRemoveCircleOutline } from "react-icons/md";
+import {
+  FaChevronDown,
+  FaChevronRight,
+  FaLevelUpAlt,
+  FaReply,
+  FaTrash,
+} from "react-icons/fa";
 
 function EditMode({
   content,
@@ -57,6 +39,32 @@ function EditMode({
   );
 }
 
+function useAutoResizingTextArea() {
+  const adjustHeight = (element: HTMLTextAreaElement) => {
+    element.style.height = "auto";
+    element.style.height = `${element.scrollHeight}px`;
+  };
+
+  return {
+    ref: (textArea: HTMLTextAreaElement | null) => {
+      if (textArea) adjustHeight(textArea);
+    },
+    onInput: (e: React.FormEvent<HTMLTextAreaElement>) => {
+      adjustHeight(e.target as HTMLTextAreaElement);
+    },
+  };
+}
+
+interface NoteProps {
+  noteId: Id<"notes">;
+  canvasItemId: Id<"canvasItems">;
+  onDragStart?: (e: React.MouseEvent) => void;
+}
+
+type NoteState =
+  | { mode: "viewing" }
+  | { mode: "editing"; draftContent: string };
+
 function MentionSpan({ noteId }: { noteId: Id<"notes"> }) {
   const note = useQuery(api.notes.get, { noteId });
   if (!note) return null;
@@ -74,7 +82,7 @@ function ViewMode({ content }: { content: string }) {
   if (!content) return <div className="text-gray-400">Empty...</div>;
 
   return (
-    <div className="whitespace-pre-wrap select-none">
+    <div className="whitespace-pre-wrap">
       {parseNoteBody(content).map((token, i) =>
         token.type === "text" ? (
           <span key={i}>{token.text}</span>
@@ -106,11 +114,13 @@ function Backlinks({ noteId }: { noteId: Id<"notes"> }) {
   );
 }
 
-export function Note({ noteId, onDragStart }: NoteProps) {
+export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
   const [state, setState] = useState<NoteState>({ mode: "viewing" });
   const [isHovered, setIsHovered] = useState(false);
   const note = useQuery(api.notes.get, { noteId });
   const updateNote = useMutation(api.notes.update);
+
+  if (!note) return null;
 
   const toggleMode = async () => {
     await match(state)
@@ -129,15 +139,17 @@ export function Note({ noteId, onDragStart }: NoteProps) {
 
   return (
     <div
-      className="w-[200px] min-h-[120px] bg-white rounded-lg shadow-lg cursor-grab relative"
+      className="w-[350px] min-h-[120px] bg-white rounded-lg shadow-lg cursor-grab relative select-none"
       onMouseDown={onDragStart}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {isHovered && note && (
+      {isHovered && (
         <NoteButtons
           noteId={noteId}
+          parentId={note.parentId}
           userId={note.userId}
+          canvasItemId={canvasItemId}
           isEditing={state.mode === "editing"}
           toggleMode={toggleMode}
         />
@@ -149,8 +161,21 @@ export function Note({ noteId, onDragStart }: NoteProps) {
             onChange={handleContentChange}
           />
         ) : (
-          <ViewMode content={note ? note.content : ""} />
+          <ViewMode content={note.content} />
         )}
+      </div>
+      <Backlinks noteId={noteId} />
+    </div>
+  );
+}
+
+export function ReadOnlyNote({ noteId }: { noteId: Id<"notes"> }) {
+  const note = useQuery(api.notes.get, { noteId });
+  if (!note) return null;
+  return (
+    <div className="w-[350px] min-h-[120px] bg-white rounded-lg shadow-lg cursor-grab relative select-none">
+      <div className="p-4">
+        <ViewMode content={note.content} />
       </div>
       <Backlinks noteId={noteId} />
     </div>
@@ -159,20 +184,34 @@ export function Note({ noteId, onDragStart }: NoteProps) {
 
 function NoteButtons({
   noteId,
+  parentId,
+  canvasItemId,
   userId,
   isEditing,
   toggleMode,
 }: {
   noteId: Id<"notes">;
+  parentId: Id<"notes"> | undefined;
+  canvasItemId: Id<"canvasItems">;
   userId: Id<"users">;
   isEditing: boolean;
   toggleMode: () => Promise<void>;
 }) {
+  const UIState = useQuery(api.noteUIStates.get, { noteId, canvasItemId });
+  const updateUIState = useMutation(api.noteUIStates.update);
   const createChild = useMutation(api.notes.createChild);
   const deleteNote = useMutation(api.notes.deleteNote);
+  const removeFromCanvas = useMutation(api.canvasItems.removeFromCanvas);
+
+  if (UIState === undefined) return null;
 
   const handleCreateChild = async () => {
     await createChild({ parentId: noteId, userId, content: "" });
+  };
+
+  const handleCreateSibling = async () => {
+    // TODO: can we make this type check?
+    await createChild({ parentId: parentId!, userId, content: "" });
   };
 
   const handleToggleMode = async () => {
@@ -183,10 +222,33 @@ function NoteButtons({
     await deleteNote({ noteId });
   };
 
+  const handleToggleCollapse = async () => {
+    await updateUIState({
+      noteId,
+      canvasItemId,
+      collapsed: !UIState.collapsed,
+    });
+  };
+
+  const handleRemoveFromCanvas = async () => {
+    await removeFromCanvas({ id: canvasItemId });
+  };
+
   return (
     <div className="absolute top-2 right-2 flex gap-1">
+      <ButtonIcon
+        icon={UIState.collapsed ? <FaChevronRight /> : <FaChevronDown />}
+        onClick={handleToggleCollapse}
+      />
+      <ButtonIcon
+        icon={<MdRemoveCircleOutline />}
+        onClick={handleRemoveFromCanvas}
+      />
       <ButtonIcon icon={<FaTrash />} onClick={handleDelete} />
       <ButtonIcon icon={<FaReply />} onClick={handleCreateChild} />
+      {parentId && (
+        <ButtonIcon icon={<FaLevelUpAlt />} onClick={handleCreateSibling} />
+      )}
       <ButtonIcon
         icon={isEditing ? <FiCheck /> : <FiEdit2 />}
         onClick={handleToggleMode}

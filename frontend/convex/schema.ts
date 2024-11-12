@@ -33,13 +33,11 @@ export default defineSchema({
   })
     .index("by_canvas", ["canvasId"])
     .index("by_rootNote", ["rootNoteId"]),
-  // noteUIStates: defineTable({
-  //   noteId: v.id("notes"),
-  //   // can have different state in different trees
-  //   canvasItemId: v.id("canvasItems"),
-  //   collapsed: v.boolean(),
-  // })
-  //   .index("by_canvas", ["canvasId"])
-  //   .index("by_note", ["noteId"]),
+  noteUIStates: defineTable({
+    noteId: v.id("notes"),
+    // can have different state in different trees
+    canvasItemId: v.id("canvasItems"),
+    collapsed: v.boolean(),
+  }).index("by_canvasItem_note", ["canvasItemId", "noteId"]),
   ...twitterTables,
 });

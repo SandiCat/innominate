@@ -73,3 +73,10 @@ export const addNoteToCanvas = mutation({
     });
   },
 });
+
+export const removeFromCanvas = mutation({
+  args: { id: v.id("canvasItems") },
+  handler: async (ctx, { id }) => {
+    await ctx.db.delete(id);
+  },
+});

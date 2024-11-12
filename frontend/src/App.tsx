@@ -4,7 +4,7 @@ import { match } from "ts-pattern";
 import { Id } from "../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
-import { Note } from "./components/Note";
+import { Note, ReadOnlyNote } from "./components/Note";
 import { CanvasItem } from "./types";
 import { NoteTree } from "./components/NoteTree";
 const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID as Id<"users">;
@@ -61,7 +61,11 @@ function CanvasItemComponent({ id, position, onDragStart }: CanvasItemProps) {
 
   return (
     <Positioned position={position}>
-      <NoteTree rootNodeId={noteId} onDragStart={onDragStart} />
+      <NoteTree
+        rootNodeId={noteId}
+        canvasItemId={id}
+        onDragStart={onDragStart}
+      />
     </Positioned>
   );
 }
@@ -100,11 +104,9 @@ function SearchDrawer({
     <div className="mt-2 bg-white/35 backdrop-blur-sm rounded-lg shadow-lg p-4 overflow-y-auto">
       <div className="space-y-4">
         {searchResults?.map((note) => (
-          <Note
-            key={note._id}
-            noteId={note._id}
-            onDragStart={(e) => onDragStart(e, note._id)}
-          />
+          <div key={note._id} onMouseDown={(e) => onDragStart(e, note._id)}>
+            <ReadOnlyNote noteId={note._id} />
+          </div>
         ))}
       </div>
     </div>
@@ -310,7 +312,7 @@ function App() {
               .with({ type: "search-item" }, ({ noteId }) => (
                 <div className="z-20">
                   <Positioned position={dragState.position}>
-                    <Note noteId={noteId} onDragStart={() => {}} />
+                    <ReadOnlyNote noteId={noteId} />
                   </Positioned>
                 </div>
               ))
