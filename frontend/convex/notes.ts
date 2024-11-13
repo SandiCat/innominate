@@ -84,7 +84,7 @@ export const deleteNote = mutation({
   },
 });
 
-// TODO: abstract human readable ID generation
+// TODO: factor out human readable ID generation
 export const create = mutation({
   args: { userId: v.id("users"), content: v.string() },
   handler: async (ctx, { userId, content }) => {

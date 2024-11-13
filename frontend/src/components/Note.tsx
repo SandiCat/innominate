@@ -7,8 +7,10 @@ import { parseNoteBody } from "../types";
 import { FiCheck, FiEdit2, FiX } from "react-icons/fi";
 import { MdRemoveCircleOutline } from "react-icons/md";
 import {
+  FaCheck,
   FaChevronDown,
   FaChevronRight,
+  FaEdit,
   FaLevelUpAlt,
   FaLink,
   FaReply,
@@ -291,12 +293,20 @@ function LinkModal({
   const [query, setQuery] = useState("");
   const notes = useQuery(api.notes.search, { userId, query });
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && notes && notes.length > 0) {
+      onAddLink(notes[0]._id);
+    }
+  };
+
   return (
     <div className="w-[300px] bg-gray-200 rounded-lg shadow-lg flex flex-col gap-4 p-2">
       <div className="flex gap-2">
         <input
           type="text"
+          autoFocus
           value={query}
+          onKeyDown={handleKeyDown}
           onChange={(e) => setQuery(e.target.value)}
           className="p-2 flex-1"
         />
@@ -320,7 +330,7 @@ export function ReadOnlyNote({ noteId }: { noteId: Id<"notes"> }) {
   const note = useQuery(api.notes.get, { noteId });
   if (!note) return null;
   return (
-    <div className="w-[350px] min-h-[120px] bg-white rounded-lg shadow-lg cursor-grab relative select-none">
+    <div className="w-full max-w-[350px] max-h-[120px] truncate bg-white rounded-lg shadow-lg cursor-grab relative select-none">
       <div className="p-4">
         <ViewMode content={note.content} />
       </div>
@@ -339,7 +349,7 @@ function EditNoteButtons({
   return (
     <div className="flex gap-1 cursor-pointer">
       <ButtonIcon icon={<FaLink />} onClick={async () => onToggleLinkModal()} />
-      <ButtonIcon icon={<FiCheck />} onClick={toggleMode} />
+      <ButtonIcon icon={<FaCheck />} onClick={toggleMode} />
     </div>
   );
 }
@@ -362,6 +372,7 @@ function ViewNoteButtons({
   const createChild = useMutation(api.notes.createChild);
   const deleteNote = useMutation(api.notes.deleteNote);
   const removeFromCanvas = useMutation(api.canvasItems.removeFromCanvas);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   if (UIState === undefined) return null;
 
@@ -379,7 +390,11 @@ function ViewNoteButtons({
   };
 
   const handleDelete = async () => {
-    await deleteNote({ noteId });
+    if (confirmDelete) {
+      await deleteNote({ noteId });
+    } else {
+      setConfirmDelete(true);
+    }
   };
 
   const handleToggleCollapse = async () => {
@@ -404,12 +419,15 @@ function ViewNoteButtons({
         icon={<MdRemoveCircleOutline />}
         onClick={handleRemoveFromCanvas}
       />
-      <ButtonIcon icon={<FaTrash />} onClick={handleDelete} />
+      <ButtonIcon
+        icon={confirmDelete ? <FaCheck /> : <FaTrash />}
+        onClick={handleDelete}
+      />
       <ButtonIcon icon={<FaReply />} onClick={handleCreateChild} />
       {parentId && (
         <ButtonIcon icon={<FaLevelUpAlt />} onClick={handleCreateSibling} />
       )}
-      <ButtonIcon icon={<FiEdit2 />} onClick={handleToggleMode} />
+      <ButtonIcon icon={<FaEdit />} onClick={handleToggleMode} />
     </div>
   );
 }
@@ -425,6 +443,7 @@ function ButtonIcon({
     <div
       className="p-1 rounded hover:bg-gray-100"
       onMouseDown={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
       onClick={async (e) => {
         e.stopPropagation();
         await onClick(e);
