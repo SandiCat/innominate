@@ -115,7 +115,7 @@ function SearchDrawer({
 
 const SEARCH_DRAG_OFFSET: Vec2.Vec2 = { x: -50, y: 0 };
 
-function App() {
+export function App() {
   const [dragState, setDragState] = useState<DragState>({ type: "idle" });
   const [searchQuery, setSearchQuery] = useState("");
   const searchResults = useQuery(api.notes.search, {
@@ -322,5 +322,3 @@ function App() {
     </div>
   );
 }
-
-export default App;

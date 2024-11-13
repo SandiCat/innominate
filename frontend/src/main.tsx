@@ -9,7 +9,9 @@ import { ClerkProvider, SignInButton, useAuth } from "@clerk/clerk-react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 
 import "./index.css";
-import App from "./App";
+import { App as DesktopApp } from "./App";
+import { App as MobileApp } from "./mobile/App";
+import { BrowserView, MobileView } from "react-device-detect";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
@@ -22,7 +24,12 @@ createRoot(document.getElementById("root")!).render(
             <SignInButton />
           </Unauthenticated>
           <Authenticated>
-            <App />
+            <BrowserView>
+              <DesktopApp />
+            </BrowserView>
+            <MobileView>
+              <MobileApp />
+            </MobileView>
           </Authenticated>
         </main>
       </ConvexProviderWithClerk>
