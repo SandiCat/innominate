@@ -408,12 +408,12 @@ function ViewNoteButtons({
   if (UIState === undefined) return null;
 
   const handleCreateChild = async () => {
-    await createChild({ parentId: noteId, userId, content: "" });
+    await createChild({ parentId: noteId, userId });
   };
 
   const handleCreateSibling = async () => {
     // TODO: can we make this type check?
-    await createChild({ parentId: parentId!, userId, content: "" });
+    await createChild({ parentId: parentId!, userId });
   };
 
   const handleToggleMode = async () => {

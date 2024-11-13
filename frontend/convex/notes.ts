@@ -1,7 +1,23 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query, MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { parseNoteBody } from "../src/types";
 import { humanReadableID } from "./human_hash/human_hash";
+import { Id } from "./_generated/dataModel";
+
+export async function createEmptyNote(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  parentId?: Id<"notes">
+): Promise<Id<"notes">> {
+  const humanReadableId = humanReadableID();
+  return ctx.db.insert("notes", {
+    content: "",
+    metadata: "",
+    parentId,
+    userId,
+    humanReadableId,
+  });
+}
 
 export const get = query({
   args: { noteId: v.id("notes") },
@@ -85,35 +101,13 @@ export const deleteNote = mutation({
   },
 });
 
-// TODO: factor out human readable ID generation
-export const create = mutation({
-  args: { userId: v.id("users"), content: v.string() },
-  handler: async (ctx, { userId, content }) => {
-    const humanReadableId = humanReadableID();
-    return await ctx.db.insert("notes", {
-      content,
-      metadata: "",
-      userId,
-      humanReadableId,
-    });
-  },
-});
-
 export const createChild = mutation({
   args: {
     parentId: v.id("notes"),
     userId: v.id("users"),
-    content: v.string(),
   },
-  handler: async (ctx, { parentId, userId, content }) => {
-    const humanReadableId = humanReadableID();
-    return await ctx.db.insert("notes", {
-      content,
-      metadata: "",
-      userId,
-      parentId,
-      humanReadableId,
-    });
+  handler: async (ctx, { parentId, userId }) => {
+    await createEmptyNote(ctx, userId, parentId);
   },
 });
 

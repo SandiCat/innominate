@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { humanReadableID } from "./human_hash/human_hash";
+import { createEmptyNote } from "./notes";
 
 export const get = query({
   args: { id: v.id("canvasItems") },
@@ -41,13 +41,7 @@ export const createNoteOnCanvas = mutation({
     const canvas = await ctx.db.get(canvasId);
     if (!canvas) throw new Error("Canvas not found");
 
-    const humanReadableId = humanReadableID();
-    const noteId = await ctx.db.insert("notes", {
-      content: "",
-      metadata: "",
-      userId: canvas.userId,
-      humanReadableId,
-    });
+    const noteId = await createEmptyNote(ctx, canvas.userId);
 
     await ctx.db.insert("canvasItems", {
       canvasId,
