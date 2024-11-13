@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Id } from "../../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -15,14 +15,17 @@ import {
   FaReply,
   FaTrash,
 } from "react-icons/fa";
+import { stringify } from "querystring";
+import { insertAt } from "../utils/string";
 
 function EditMode({
   content,
   onChange,
+  outerRef,
 }: {
   content: string;
-  onContentChange: (content: string) => void;
-  onCaretPositionChange: (caretPosition: number) => void;
+  onChange: (content: string) => void;
+  outerRef: React.MutableRefObject<HTMLTextAreaElement | undefined>;
 }) {
   const textArea = useAutoResizingTextArea();
 
@@ -31,12 +34,14 @@ function EditMode({
       onMouseDown={(e) => e.stopPropagation()}
       className="w-full resize-none outline-none select-text"
       value={content}
-      onChange={(e) => onContentChange(e.target.value)}
-      onSelect={(e) => onCaretPositionChange(e.target.selectionStart)}
+      onChange={(e) => onChange(e.target.value)}
       autoFocus
       rows={1}
       style={{ height: "auto", minHeight: "1em" }}
-      ref={textArea.ref}
+      ref={(ref) => {
+        textArea.ref(ref);
+        if (ref) outerRef.current = ref;
+      }}
       onInput={textArea.onInput}
     />
   );
@@ -57,21 +62,6 @@ function useAutoResizingTextArea() {
     },
   };
 }
-
-interface NoteProps {
-  noteId: Id<"notes">;
-  canvasItemId: Id<"canvasItems">;
-  onDragStart?: (e: React.MouseEvent) => void;
-}
-
-type NoteState =
-  | { mode: "viewing" }
-  | {
-      mode: "editing";
-      draftContent: string;
-      showingLinkModal: boolean;
-      lastCaretPosition: number | undefined;
-    };
 
 function MentionSpan({ noteId }: { noteId: Id<"notes"> }) {
   const note = useQuery(api.notes.get, { noteId });
@@ -122,8 +112,27 @@ function Backlinks({ noteId }: { noteId: Id<"notes"> }) {
   );
 }
 
+interface NoteProps {
+  noteId: Id<"notes">;
+  canvasItemId: Id<"canvasItems">;
+  onDragStart?: (e: React.MouseEvent) => void;
+}
+
+type NoteState =
+  | { mode: "viewing" }
+  | {
+      mode: "editing";
+      draftContent: string;
+      linkModalState: LinkModalState;
+    };
+
+type LinkModalState =
+  | { mode: "closed" }
+  | { mode: "open"; insertPosition: number };
+
 export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
   const [state, setState] = useState<NoteState>({ mode: "viewing" });
+  const textArea = useRef<HTMLTextAreaElement>();
   const [isHovered, setIsHovered] = useState(false);
   const note = useQuery(api.notes.get, { noteId });
   const updateNote = useMutation(api.notes.update);
@@ -140,54 +149,62 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
         setState({
           mode: "editing",
           draftContent: note.content,
-          showingLinkModal: false,
-          lastCaretPosition: undefined,
+          linkModalState: { mode: "closed" },
         });
       })
       .exhaustive();
   };
 
-  const handleContentChange = (e: React.FormEvent<HTMLTextAreaElement>) => {
-    console.log(e.currentTarget.selectionStart);
+  const handleContentChange = (content: string) => {
     if (state.mode === "editing") {
       setState({
         ...state,
-        draftContent: e.currentTarget.value,
-        lastCaretPosition: e.currentTarget.selectionStart,
+        draftContent: content,
       });
     } else {
       throw new Error("Cannot change content in non-editing mode");
     }
   };
 
-  const showingLinkModal = state.mode === "editing" && state.showingLinkModal;
+  const showingLinkModal =
+    state.mode === "editing" && state.linkModalState.mode === "open";
 
   const handleShowLinkModal = () => {
     if (state.mode !== "editing") {
       throw new Error("Cannot show link modal in non-editing mode");
     }
-    setState({ ...state, showingLinkModal: true });
+
+    if (textArea.current === undefined) {
+      throw new Error("Missing text area when inserting a link");
+    }
+
+    const insertPosition = textArea.current.selectionStart;
+
+    setState({
+      ...state,
+      linkModalState: { mode: "open", insertPosition },
+    });
   };
 
   const handleAddLink = (linkNoteId: Id<"notes">) => {
-    console.log(JSON.stringify({ state, linkNoteId }, null, 2));
-
-    if (state.mode !== "editing") {
-      throw new Error("Cannot add link in non-editing mode");
+    if (state.mode !== "editing" || state.linkModalState.mode !== "open") {
+      throw new Error("Adding link in invalid state");
     }
 
     const linkText = `[[${linkNoteId}]]`;
 
     const newContent =
-      state.lastCaretPosition === undefined
+      state.linkModalState.insertPosition === undefined
         ? state.draftContent + linkText
-        : state.draftContent.slice(0, state.lastCaretPosition) +
-          linkText +
-          state.draftContent.slice(state.lastCaretPosition);
+        : insertAt(
+            state.draftContent,
+            linkText,
+            state.linkModalState.insertPosition
+          );
 
     setState({
       ...state,
-      showingLinkModal: false,
+      linkModalState: { mode: "closed" },
       draftContent: newContent,
     });
   };
@@ -215,6 +232,7 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
             <EditMode
               content={state.draftContent}
               onChange={handleContentChange}
+              outerRef={textArea}
             />
             <ButtonIcon
               icon={<FaLink />}
@@ -252,7 +270,7 @@ function LinkModal({
   const notes = useQuery(api.notes.search, { userId, query });
 
   return (
-    <div className="w-[150px] bg-gray-200 rounded-lg shadow-lg flex flex-col gap-4 p-2">
+    <div className="w-[300px] bg-gray-200 rounded-lg shadow-lg flex flex-col gap-4 p-2">
       <input
         type="text"
         value={query}
@@ -262,8 +280,9 @@ function LinkModal({
       {notes?.map((note) => (
         <div
           key={note._id}
-          className="p-2 hover:bg-gray-100 rounded-md cursor-pointer"
+          className="p-2 hover:bg-gray-100 rounded-md cursor-pointer truncate"
           onClick={() => onAddLink(note._id)}
+          title={note.content}
         >
           {note.content}
         </div>
