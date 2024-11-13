@@ -30,7 +30,7 @@ function EditContents({
   return (
     <textarea
       onMouseDown={(e) => e.stopPropagation()}
-      className="w-full resize-none outline-none select-text"
+      className="w-full resize-none outline-none select-text border-b-2"
       value={content}
       onChange={(e) => onChange(e.target.value)}
       autoFocus
@@ -71,7 +71,7 @@ function EditMetadata({
       onMouseDown={(e) => e.stopPropagation()}
       onChange={(e) => onChange(e.target.value)}
       placeholder="metadata..."
-      className="w-full resize-none outline-none border-t-2 pt-2 select-text"
+      className="w-full resize-none outline-none select-text"
     />
   );
 }
@@ -251,25 +251,28 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="flex flex-col p-4 flex-1">
+      <div className="p-4 flex-1 flex">
         {state.mode === "editing" ? (
           <>
-            <div className="flex-1">
+            <div className="flex-1 flex flex-col gap-2">
               <EditContents
                 content={state.draftContent}
                 onChange={handleContentChange}
                 outerRef={textArea}
               />
-              <EditMetadata
-                metadata={state.draftMetadata}
-                onChange={handleMetadataChange}
-              />
-            </div>
-            <div className="self-end justify-self-end">
-              <EditNoteButtons
-                toggleMode={toggleMode}
-                onToggleLinkModal={handleToggleLinkModal}
-              />
+
+              <div className="flex flex-row gap-2">
+                <EditMetadata
+                  metadata={state.draftMetadata}
+                  onChange={handleMetadataChange}
+                />
+                <div className="self-end justify-self-end">
+                  <EditNoteButtons
+                    toggleMode={toggleMode}
+                    onToggleLinkModal={handleToggleLinkModal}
+                  />
+                </div>
+              </div>
             </div>
           </>
         ) : (
