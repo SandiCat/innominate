@@ -44,6 +44,7 @@ export const createNoteOnCanvas = mutation({
     const humanReadableId = humanReadableID();
     const noteId = await ctx.db.insert("notes", {
       content: "",
+      metadata: "",
       userId: canvas.userId,
       humanReadableId,
     });

@@ -6,6 +6,7 @@ export default defineSchema({
   users: defineTable({}), // just the ID
   notes: defineTable({
     content: v.string(),
+    metadata: v.string(),
     parentId: v.optional(v.id("notes")),
     userId: v.id("users"),
     humanReadableId: v.string(),

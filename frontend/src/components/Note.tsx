@@ -18,7 +18,7 @@ import {
 } from "react-icons/fa";
 import { insertAt } from "../utils/string";
 
-function EditMode({
+function EditContents({
   content,
   onChange,
   outerRef,
@@ -27,8 +27,6 @@ function EditMode({
   onChange: (content: string) => void;
   outerRef: React.MutableRefObject<HTMLTextAreaElement | undefined>;
 }) {
-  const textArea = useAutoResizingTextArea();
-
   return (
     <textarea
       onMouseDown={(e) => e.stopPropagation()}
@@ -36,31 +34,46 @@ function EditMode({
       value={content}
       onChange={(e) => onChange(e.target.value)}
       autoFocus
-      rows={1}
+      rows={3}
       style={{ height: "auto", minHeight: "1em" }}
       ref={(ref) => {
-        textArea.ref(ref);
+        autoResizeRef(ref);
         if (ref) outerRef.current = ref;
       }}
-      onInput={textArea.onInput}
+      onInput={autoResizeOnInput}
     />
   );
 }
 
-function useAutoResizingTextArea() {
-  const adjustHeight = (element: HTMLTextAreaElement) => {
-    element.style.height = "auto";
-    element.style.height = `${element.scrollHeight}px`;
-  };
+function fitHeightToContents(element: HTMLTextAreaElement) {
+  element.style.height = "auto";
+  element.style.height = `${element.scrollHeight}px`;
+}
 
-  return {
-    ref: (textArea: HTMLTextAreaElement | null) => {
-      if (textArea) adjustHeight(textArea);
-    },
-    onInput: (e: React.FormEvent<HTMLTextAreaElement>) => {
-      adjustHeight(e.target as HTMLTextAreaElement);
-    },
-  };
+function autoResizeRef(element: HTMLTextAreaElement | null) {
+  if (element) fitHeightToContents(element);
+}
+
+function autoResizeOnInput(e: React.FormEvent<HTMLTextAreaElement>) {
+  fitHeightToContents(e.target as HTMLTextAreaElement);
+}
+
+function EditMetadata({
+  metadata,
+  onChange,
+}: {
+  metadata: string;
+  onChange: (metadata: string) => void;
+}) {
+  return (
+    <input
+      value={metadata}
+      onMouseDown={(e) => e.stopPropagation()}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder="metadata..."
+      className="w-full resize-none outline-none border-t-2 pt-2 select-text"
+    />
+  );
 }
 
 function MentionSpan({ noteId }: { noteId: Id<"notes"> }) {
@@ -127,6 +140,7 @@ type NoteState =
   | {
       mode: "editing";
       draftContent: string;
+      draftMetadata: string;
       linkModalState: LinkModalState;
     };
 
@@ -148,14 +162,19 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
 
   const toggleMode = async () => {
     await match(state)
-      .with({ mode: "editing" }, async ({ draftContent }) => {
-        await updateNote({ noteId, content: draftContent });
+      .with({ mode: "editing" }, async ({ draftContent, draftMetadata }) => {
+        await updateNote({
+          noteId,
+          content: draftContent,
+          metadata: draftMetadata,
+        });
         setState({ mode: "viewing" });
       })
       .with({ mode: "viewing" }, async () => {
         setState({
           mode: "editing",
           draftContent: note.content,
+          draftMetadata: note.metadata,
           linkModalState: { mode: "closed" },
         });
       })
@@ -164,12 +183,17 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
 
   const handleContentChange = (content: string) => {
     if (state.mode === "editing") {
-      setState({
-        ...state,
-        draftContent: content,
-      });
+      setState({ ...state, draftContent: content });
     } else {
       throw new Error("Cannot change content in non-editing mode");
+    }
+  };
+
+  const handleMetadataChange = (metadata: string) => {
+    if (state.mode === "editing") {
+      setState({ ...state, draftMetadata: metadata });
+    } else {
+      throw new Error("Cannot change metadata in non-editing mode");
     }
   };
 
@@ -231,10 +255,14 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
         {state.mode === "editing" ? (
           <>
             <div className="flex-1">
-              <EditMode
+              <EditContents
                 content={state.draftContent}
                 onChange={handleContentChange}
                 outerRef={textArea}
+              />
+              <EditMetadata
+                metadata={state.draftMetadata}
+                onChange={handleMetadataChange}
               />
             </div>
             <div className="self-end justify-self-end">

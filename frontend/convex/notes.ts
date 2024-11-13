@@ -25,8 +25,9 @@ export const update = mutation({
   args: {
     noteId: v.id("notes"),
     content: v.string(),
+    metadata: v.string(),
   },
-  handler: async (ctx, { noteId, content }) => {
+  handler: async (ctx, { noteId, content, metadata }) => {
     // First delete ALL existing mentions for this note
     await ctx.db
       .query("mentions")
@@ -46,7 +47,7 @@ export const update = mutation({
         )
     );
 
-    await ctx.db.patch(noteId, { content });
+    await ctx.db.patch(noteId, { content, metadata });
   },
 });
 
@@ -91,6 +92,7 @@ export const create = mutation({
     const humanReadableId = humanReadableID();
     return await ctx.db.insert("notes", {
       content,
+      metadata: "",
       userId,
       humanReadableId,
     });
@@ -107,6 +109,7 @@ export const createChild = mutation({
     const humanReadableId = humanReadableID();
     return await ctx.db.insert("notes", {
       content,
+      metadata: "",
       userId,
       parentId,
       humanReadableId,
