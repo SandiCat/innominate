@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { Id } from "../../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { match } from "ts-pattern";
+import { match, P } from "ts-pattern";
 import { parseNoteBody } from "../types";
 import { FiCheck, FiEdit2 } from "react-icons/fi";
 import { BsReply } from "react-icons/bs";
@@ -139,6 +139,15 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
 
   if (!note) return null;
 
+  const showingLinkModal =
+    state.mode === "editing" && state.linkModalState.mode === "open";
+
+  const buttonsModalState = match([isHovered, state.mode])
+    .with([P.any, "editing"], () => "fixed")
+    .with([true, "viewing"], () => "hovering")
+    .with([false, "viewing"], () => "hidden")
+    .exhaustive();
+
   const toggleMode = async () => {
     await match(state)
       .with({ mode: "editing" }, async ({ draftContent }) => {
@@ -165,9 +174,6 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
       throw new Error("Cannot change content in non-editing mode");
     }
   };
-
-  const showingLinkModal =
-    state.mode === "editing" && state.linkModalState.mode === "open";
 
   const handleShowLinkModal = () => {
     if (state.mode !== "editing") {
@@ -211,36 +217,50 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
 
   const noteUI = (
     <div
-      className="w-[350px] min-h-[120px] bg-white rounded-lg shadow-lg cursor-grab relative select-none"
+      className="w-[350px] min-h-[120px] bg-white rounded-lg shadow-lg cursor-grab relative select-none flex flex-col"
       onMouseDown={onDragStart}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {isHovered && (
-        <NoteButtons
-          noteId={noteId}
-          parentId={note.parentId}
-          userId={note.userId}
-          canvasItemId={canvasItemId}
-          isEditing={state.mode === "editing"}
-          toggleMode={toggleMode}
-        />
-      )}
-      <div className="p-4">
+      <div className="flex flex-col p-4 flex-1">
         {state.mode === "editing" ? (
-          <div className="flex gap-2 flex-col">
-            <EditMode
-              content={state.draftContent}
-              onChange={handleContentChange}
-              outerRef={textArea}
-            />
-            <ButtonIcon
-              icon={<FaLink />}
-              onClick={async () => handleShowLinkModal()}
-            />
-          </div>
+          <>
+            <div className="flex-1">
+              <EditMode
+                content={state.draftContent}
+                onChange={handleContentChange}
+                outerRef={textArea}
+              />
+            </div>
+            <div className="self-end justify-self-end">
+              <NoteButtons
+                noteId={noteId}
+                parentId={note.parentId}
+                userId={note.userId}
+                canvasItemId={canvasItemId}
+                isEditing={true}
+                toggleMode={toggleMode}
+                onShowLinkModal={handleShowLinkModal}
+              />
+            </div>
+          </>
         ) : (
-          <ViewMode content={note.content} />
+          <>
+            <ViewMode content={note.content} />
+            {isHovered && (
+              <div className="absolute bottom-2 right-2 ">
+                <NoteButtons
+                  noteId={noteId}
+                  parentId={note.parentId}
+                  userId={note.userId}
+                  canvasItemId={canvasItemId}
+                  isEditing={false}
+                  toggleMode={toggleMode}
+                  onShowLinkModal={handleShowLinkModal}
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
       <Backlinks noteId={noteId} />
@@ -311,6 +331,7 @@ function NoteButtons({
   userId,
   isEditing,
   toggleMode,
+  onShowLinkModal,
 }: {
   noteId: Id<"notes">;
   parentId: Id<"notes"> | undefined;
@@ -318,6 +339,7 @@ function NoteButtons({
   userId: Id<"users">;
   isEditing: boolean;
   toggleMode: () => Promise<void>;
+  onShowLinkModal: () => void;
 }) {
   const UIState = useQuery(api.noteUIStates.get, { noteId, canvasItemId });
   const updateUIState = useMutation(api.noteUIStates.update);
@@ -357,7 +379,10 @@ function NoteButtons({
   };
 
   return (
-    <div className="absolute top-2 right-2 flex gap-1">
+    <div className="flex gap-1 cursor-pointer">
+      {isEditing ? (
+        <ButtonIcon icon={<FaLink />} onClick={async () => onShowLinkModal()} />
+      ) : null}
       <ButtonIcon
         icon={UIState.collapsed ? <FaChevronRight /> : <FaChevronDown />}
         onClick={handleToggleCollapse}
