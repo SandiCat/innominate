@@ -120,9 +120,11 @@ export const getMentionedBy = query({
       .withIndex("by_to", (q) => q.eq("to", noteId))
       .collect();
 
+    const uniqueMentionedNotes = new Set(mentions.map((m) => m.from));
+
     return await Promise.all(
-      mentions.map(async (mention) => {
-        const note = await ctx.db.get(mention.from);
+      Array.from(uniqueMentionedNotes).map(async (noteId) => {
+        const note = await ctx.db.get(noteId);
         if (!note) throw new Error("Mention of non-existent note");
         return note;
       })

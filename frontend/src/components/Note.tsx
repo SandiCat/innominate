@@ -11,6 +11,7 @@ import {
   FaChevronDown,
   FaChevronRight,
   FaLevelUpAlt,
+  FaLink,
   FaReply,
   FaTrash,
 } from "react-icons/fa";
@@ -20,7 +21,8 @@ function EditMode({
   onChange,
 }: {
   content: string;
-  onChange: (content: string) => void;
+  onContentChange: (content: string) => void;
+  onCaretPositionChange: (caretPosition: number) => void;
 }) {
   const textArea = useAutoResizingTextArea();
 
@@ -29,7 +31,8 @@ function EditMode({
       onMouseDown={(e) => e.stopPropagation()}
       className="w-full resize-none outline-none select-text"
       value={content}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={(e) => onContentChange(e.target.value)}
+      onSelect={(e) => onCaretPositionChange(e.target.selectionStart)}
       autoFocus
       rows={1}
       style={{ height: "auto", minHeight: "1em" }}
@@ -63,7 +66,12 @@ interface NoteProps {
 
 type NoteState =
   | { mode: "viewing" }
-  | { mode: "editing"; draftContent: string };
+  | {
+      mode: "editing";
+      draftContent: string;
+      showingLinkModal: boolean;
+      lastCaretPosition: number | undefined;
+    };
 
 function MentionSpan({ noteId }: { noteId: Id<"notes"> }) {
   const note = useQuery(api.notes.get, { noteId });
@@ -129,15 +137,62 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
         setState({ mode: "viewing" });
       })
       .with({ mode: "viewing" }, async () => {
-        setState({ mode: "editing", draftContent: note.content });
+        setState({
+          mode: "editing",
+          draftContent: note.content,
+          showingLinkModal: false,
+          lastCaretPosition: undefined,
+        });
       })
       .exhaustive();
   };
 
-  const handleContentChange = (content: string) =>
-    setState({ mode: "editing", draftContent: content });
+  const handleContentChange = (e: React.FormEvent<HTMLTextAreaElement>) => {
+    console.log(e.currentTarget.selectionStart);
+    if (state.mode === "editing") {
+      setState({
+        ...state,
+        draftContent: e.currentTarget.value,
+        lastCaretPosition: e.currentTarget.selectionStart,
+      });
+    } else {
+      throw new Error("Cannot change content in non-editing mode");
+    }
+  };
 
-  return (
+  const showingLinkModal = state.mode === "editing" && state.showingLinkModal;
+
+  const handleShowLinkModal = () => {
+    if (state.mode !== "editing") {
+      throw new Error("Cannot show link modal in non-editing mode");
+    }
+    setState({ ...state, showingLinkModal: true });
+  };
+
+  const handleAddLink = (linkNoteId: Id<"notes">) => {
+    console.log(JSON.stringify({ state, linkNoteId }, null, 2));
+
+    if (state.mode !== "editing") {
+      throw new Error("Cannot add link in non-editing mode");
+    }
+
+    const linkText = `[[${linkNoteId}]]`;
+
+    const newContent =
+      state.lastCaretPosition === undefined
+        ? state.draftContent + linkText
+        : state.draftContent.slice(0, state.lastCaretPosition) +
+          linkText +
+          state.draftContent.slice(state.lastCaretPosition);
+
+    setState({
+      ...state,
+      showingLinkModal: false,
+      draftContent: newContent,
+    });
+  };
+
+  const noteUI = (
     <div
       className="w-[350px] min-h-[120px] bg-white rounded-lg shadow-lg cursor-grab relative select-none"
       onMouseDown={onDragStart}
@@ -156,15 +211,63 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
       )}
       <div className="p-4">
         {state.mode === "editing" ? (
-          <EditMode
-            content={state.draftContent}
-            onChange={handleContentChange}
-          />
+          <div className="flex gap-2 flex-col">
+            <EditMode
+              content={state.draftContent}
+              onChange={handleContentChange}
+            />
+            <ButtonIcon
+              icon={<FaLink />}
+              onClick={async () => handleShowLinkModal()}
+            />
+          </div>
         ) : (
           <ViewMode content={note.content} />
         )}
       </div>
       <Backlinks noteId={noteId} />
+    </div>
+  );
+
+  return (
+    <div className="relative">
+      {noteUI}
+      {showingLinkModal && (
+        <div className="absolute left-full pl-4 top-0">
+          <LinkModal userId={note.userId} onAddLink={handleAddLink} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LinkModal({
+  userId,
+  onAddLink,
+}: {
+  userId: Id<"users">;
+  onAddLink: (noteId: Id<"notes">) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const notes = useQuery(api.notes.search, { userId, query });
+
+  return (
+    <div className="w-[150px] bg-gray-200 rounded-lg shadow-lg flex flex-col gap-4 p-2">
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        className="p-2"
+      />
+      {notes?.map((note) => (
+        <div
+          key={note._id}
+          className="p-2 hover:bg-gray-100 rounded-md cursor-pointer"
+          onClick={() => onAddLink(note._id)}
+        >
+          {note.content}
+        </div>
+      ))}
     </div>
   );
 }
