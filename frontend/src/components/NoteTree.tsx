@@ -2,7 +2,6 @@ import { Note } from "./Note";
 import { Id } from "../../convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { FaReply } from "react-icons/fa";
 
 interface NoteTreeProps {
   rootNodeId: Id<"notes">;
@@ -34,24 +33,23 @@ export function NoteTree({
         canvasItemId={canvasItemId}
         onDragStart={onDragStart}
       />
-
-      <div className="ml-8 flex flex-col gap-4">
-        {children.length === 0 ? null : noteUIState.collapsed ? (
-          <div className="text-sm text-gray-500 bg-gray-300 text-center rounded-3xl px-2 py-1 inline-block">
-            Hiding {children.length}{" "}
-            {children.length === 1 ? "child" : "children"}
-          </div>
-        ) : (
-          children.map((childNote) => (
+      {children.length === 0 ? null : noteUIState.collapsed ? (
+        <div className="text-sm text-gray-500 bg-gray-300 text-center rounded-3xl px-2 py-1 inline-block">
+          Hiding {children.length}{" "}
+          {children.length === 1 ? "child" : "children"}
+        </div>
+      ) : (
+        <div className="ml-8 flex flex-col gap-4">
+          {children.map((childNote) => (
             <NoteTree
               key={childNote._id}
               rootNodeId={childNote._id}
               canvasItemId={canvasItemId}
               onDragStart={onDragStart}
             />
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
