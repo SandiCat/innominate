@@ -34,7 +34,7 @@ export function NoteTree({
         onDragStart={onDragStart}
       />
       {children.length === 0 ? null : noteUIState.collapsed ? (
-        <div className="text-sm text-gray-500 bg-gray-300 text-center rounded-3xl px-2 py-1 inline-block">
+        <div className="text-sm text-gray-500 bg-gray-300 text-center rounded-3xl px-2 py-1 inline-block select-none">
           Hiding {children.length}{" "}
           {children.length === 1 ? "child" : "children"}
         </div>

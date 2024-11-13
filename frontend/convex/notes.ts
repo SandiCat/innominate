@@ -63,6 +63,24 @@ export const deleteNote = mutation({
       .then((canvasItems) =>
         Promise.all(canvasItems.map((ci) => ctx.db.delete(ci._id)))
       );
+
+    // Delete associated mentions
+
+    await ctx.db
+      .query("mentions")
+      .withIndex("by_from", (q) => q.eq("from", noteId))
+      .collect()
+      .then((mentions) =>
+        Promise.all(mentions.map((m) => ctx.db.delete(m._id)))
+      );
+
+    await ctx.db
+      .query("mentions")
+      .withIndex("by_to", (q) => q.eq("to", noteId))
+      .collect()
+      .then((mentions) =>
+        Promise.all(mentions.map((m) => ctx.db.delete(m._id)))
+      );
   },
 });
 

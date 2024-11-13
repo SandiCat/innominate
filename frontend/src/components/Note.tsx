@@ -4,8 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { match, P } from "ts-pattern";
 import { parseNoteBody } from "../types";
-import { FiCheck, FiEdit2 } from "react-icons/fi";
-import { BsReply } from "react-icons/bs";
+import { FiCheck, FiEdit2, FiX } from "react-icons/fi";
 import { MdRemoveCircleOutline } from "react-icons/md";
 import {
   FaChevronDown,
@@ -15,7 +14,6 @@ import {
   FaReply,
   FaTrash,
 } from "react-icons/fa";
-import { stringify } from "querystring";
 import { insertAt } from "../utils/string";
 
 function EditMode({
@@ -65,15 +63,19 @@ function useAutoResizingTextArea() {
 
 function MentionSpan({ noteId }: { noteId: Id<"notes"> }) {
   const note = useQuery(api.notes.get, { noteId });
-  if (!note) return null;
-  return (
-    <span
-      className="bg-blue-100 px-1 rounded cursor-help"
-      title={note?.content || "Loading..."}
-    >
-      @{note.humanReadableId}
-    </span>
-  );
+
+  if (note === null) {
+    return <span className="bg-gray-200 px-1 rounded">broken link</span>;
+  } else {
+    return (
+      <span
+        className="bg-blue-100 px-1 rounded cursor-help"
+        title={note === undefined ? "Loading..." : note.content}
+      >
+        @{note === undefined ? "Loading..." : note.humanReadableId}
+      </span>
+    );
+  }
 }
 
 function ViewMode({ content }: { content: string }) {
@@ -142,12 +144,6 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
   const showingLinkModal =
     state.mode === "editing" && state.linkModalState.mode === "open";
 
-  const buttonsModalState = match([isHovered, state.mode])
-    .with([P.any, "editing"], () => "fixed")
-    .with([true, "viewing"], () => "hovering")
-    .with([false, "viewing"], () => "hidden")
-    .exhaustive();
-
   const toggleMode = async () => {
     await match(state)
       .with({ mode: "editing" }, async ({ draftContent }) => {
@@ -175,7 +171,7 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
     }
   };
 
-  const handleShowLinkModal = () => {
+  const handleToggleLinkModal = () => {
     if (state.mode !== "editing") {
       throw new Error("Cannot show link modal in non-editing mode");
     }
@@ -184,12 +180,19 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
       throw new Error("Missing text area when inserting a link");
     }
 
-    const insertPosition = textArea.current.selectionStart;
+    if (state.linkModalState.mode === "open") {
+      setState({
+        ...state,
+        linkModalState: { mode: "closed" },
+      });
+    } else {
+      const insertPosition = textArea.current.selectionStart;
 
-    setState({
-      ...state,
-      linkModalState: { mode: "open", insertPosition },
-    });
+      setState({
+        ...state,
+        linkModalState: { mode: "open", insertPosition },
+      });
+    }
   };
 
   const handleAddLink = (linkNoteId: Id<"notes">) => {
@@ -233,14 +236,9 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
               />
             </div>
             <div className="self-end justify-self-end">
-              <NoteButtons
-                noteId={noteId}
-                parentId={note.parentId}
-                userId={note.userId}
-                canvasItemId={canvasItemId}
-                isEditing={true}
+              <EditNoteButtons
                 toggleMode={toggleMode}
-                onShowLinkModal={handleShowLinkModal}
+                onToggleLinkModal={handleToggleLinkModal}
               />
             </div>
           </>
@@ -249,14 +247,12 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
             <ViewMode content={note.content} />
             {isHovered && (
               <div className="absolute bottom-2 right-2 ">
-                <NoteButtons
+                <ViewNoteButtons
                   noteId={noteId}
                   parentId={note.parentId}
                   userId={note.userId}
                   canvasItemId={canvasItemId}
-                  isEditing={false}
                   toggleMode={toggleMode}
-                  onShowLinkModal={handleShowLinkModal}
                 />
               </div>
             )}
@@ -271,8 +267,12 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
     <div className="relative">
       {noteUI}
       {showingLinkModal && (
-        <div className="absolute left-full pl-4 top-0">
-          <LinkModal userId={note.userId} onAddLink={handleAddLink} />
+        <div className="absolute left-full pl-4 top-0 z-20">
+          <LinkModal
+            userId={note.userId}
+            onAddLink={handleAddLink}
+            onClose={handleToggleLinkModal}
+          />
         </div>
       )}
     </div>
@@ -282,21 +282,26 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
 function LinkModal({
   userId,
   onAddLink,
+  onClose,
 }: {
   userId: Id<"users">;
   onAddLink: (noteId: Id<"notes">) => void;
+  onClose: () => void;
 }) {
   const [query, setQuery] = useState("");
   const notes = useQuery(api.notes.search, { userId, query });
 
   return (
     <div className="w-[300px] bg-gray-200 rounded-lg shadow-lg flex flex-col gap-4 p-2">
-      <input
-        type="text"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        className="p-2"
-      />
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="p-2 flex-1"
+        />
+        <ButtonIcon icon={<FiX />} onClick={async () => onClose()} />
+      </div>
       {notes?.map((note) => (
         <div
           key={note._id}
@@ -324,22 +329,33 @@ export function ReadOnlyNote({ noteId }: { noteId: Id<"notes"> }) {
   );
 }
 
-function NoteButtons({
+function EditNoteButtons({
+  toggleMode,
+  onToggleLinkModal,
+}: {
+  toggleMode: () => Promise<void>;
+  onToggleLinkModal: () => void;
+}) {
+  return (
+    <div className="flex gap-1 cursor-pointer">
+      <ButtonIcon icon={<FaLink />} onClick={async () => onToggleLinkModal()} />
+      <ButtonIcon icon={<FiCheck />} onClick={toggleMode} />
+    </div>
+  );
+}
+
+function ViewNoteButtons({
   noteId,
   parentId,
   canvasItemId,
   userId,
-  isEditing,
   toggleMode,
-  onShowLinkModal,
 }: {
   noteId: Id<"notes">;
   parentId: Id<"notes"> | undefined;
   canvasItemId: Id<"canvasItems">;
   userId: Id<"users">;
-  isEditing: boolean;
   toggleMode: () => Promise<void>;
-  onShowLinkModal: () => void;
 }) {
   const UIState = useQuery(api.noteUIStates.get, { noteId, canvasItemId });
   const updateUIState = useMutation(api.noteUIStates.update);
@@ -380,9 +396,6 @@ function NoteButtons({
 
   return (
     <div className="flex gap-1 cursor-pointer">
-      {isEditing ? (
-        <ButtonIcon icon={<FaLink />} onClick={async () => onShowLinkModal()} />
-      ) : null}
       <ButtonIcon
         icon={UIState.collapsed ? <FaChevronRight /> : <FaChevronDown />}
         onClick={handleToggleCollapse}
@@ -396,10 +409,7 @@ function NoteButtons({
       {parentId && (
         <ButtonIcon icon={<FaLevelUpAlt />} onClick={handleCreateSibling} />
       )}
-      <ButtonIcon
-        icon={isEditing ? <FiCheck /> : <FiEdit2 />}
-        onClick={handleToggleMode}
-      />
+      <ButtonIcon icon={<FiEdit2 />} onClick={handleToggleMode} />
     </div>
   );
 }
