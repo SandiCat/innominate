@@ -7,14 +7,15 @@ export default defineSchema({
   notes: defineTable({
     content: v.string(),
     metadata: v.string(),
+    searchText: v.string(), // we combine text fields into one and search over that
     parentId: v.optional(v.id("notes")),
     userId: v.id("users"),
     humanReadableId: v.string(),
   })
     .index("by_user", ["userId"])
     .index("by_parent", ["parentId"])
-    .searchIndex("search_content", {
-      searchField: "content",
+    .searchIndex("search_searchText", {
+      searchField: "searchText",
       filterFields: ["userId"],
     }),
   mentions: defineTable({

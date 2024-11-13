@@ -16,7 +16,12 @@ export async function createEmptyNote(
     parentId,
     userId,
     humanReadableId,
+    searchText: "",
   });
+}
+
+export function buildSearchText(content: string, metadata: string) {
+  return `${content}\n${metadata}`;
 }
 
 export const get = query({
@@ -63,7 +68,9 @@ export const update = mutation({
         )
     );
 
-    await ctx.db.patch(noteId, { content, metadata });
+    const searchText = buildSearchText(content, metadata);
+
+    await ctx.db.patch(noteId, { content, metadata, searchText });
   },
 });
 
@@ -120,8 +127,8 @@ export const search = query({
     if (!query.trim()) return [];
     return await ctx.db
       .query("notes")
-      .withSearchIndex("search_content", (q) =>
-        q.search("content", query).eq("userId", userId)
+      .withSearchIndex("search_searchText", (q) =>
+        q.search("searchText", query).eq("userId", userId)
       )
       .take(10);
   },
