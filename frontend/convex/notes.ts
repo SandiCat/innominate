@@ -25,8 +25,11 @@ export function buildSearchText(content: string, metadata: string) {
 }
 
 export const get = query({
-  args: { noteId: v.id("notes") },
+  // TODO: Allowing this to be optional simplifies chaining a `useQuery` with a
+  // `useState`. I wonder if there's a better way.
+  args: { noteId: v.optional(v.id("notes")) },
   handler: async (ctx, { noteId }) => {
+    if (!noteId) return null;
     return await ctx.db.get(noteId);
   },
 });
@@ -47,8 +50,9 @@ export const update = mutation({
     noteId: v.id("notes"),
     content: v.string(),
     metadata: v.string(),
+    parentId: v.optional(v.id("notes")),
   },
-  handler: async (ctx, { noteId, content, metadata }) => {
+  handler: async (ctx, { noteId, content, metadata, parentId }) => {
     // First delete ALL existing mentions for this note
     await ctx.db
       .query("mentions")
@@ -70,7 +74,7 @@ export const update = mutation({
 
     const searchText = buildSearchText(content, metadata);
 
-    await ctx.db.patch(noteId, { content, metadata, searchText });
+    await ctx.db.patch(noteId, { content, metadata, searchText, parentId });
   },
 });
 
