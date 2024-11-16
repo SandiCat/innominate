@@ -50,6 +50,7 @@ export const update = mutation({
     noteId: v.id("notes"),
     content: v.string(),
     metadata: v.string(),
+    // TODO: undefined could mean both "don't change parent" and "remove parent"
     parentId: v.optional(v.id("notes")),
   },
   handler: async (ctx, { noteId, content, metadata, parentId }) => {

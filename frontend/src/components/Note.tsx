@@ -167,6 +167,7 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
           noteId,
           content: draftContent,
           metadata: draftMetadata,
+          parentId: note.parentId,
         });
         setState({ mode: "viewing" });
       })
