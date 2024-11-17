@@ -1,7 +1,8 @@
-import { mutation, query } from "./_generated/server";
+import { myQuery, myMutation } from "./wrapper";
 import { v } from "convex/values";
 import { vec2 } from "./types";
-export const getCanvasForUser = query({
+
+export const getCanvasForUser = myQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
     const existingCanvas = await ctx.db
@@ -27,14 +28,14 @@ export const getCanvasForUser = query({
   },
 });
 
-export const setCanvasOrigin = mutation({
+export const setCanvasOrigin = myMutation({
   args: { canvasId: v.id("canvases"), origin: vec2 },
   handler: async (ctx, { canvasId, origin }) => {
     await ctx.db.patch(canvasId, { origin });
   },
 });
 
-export const createCanvas = mutation({
+export const createCanvas = myMutation({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
     const id = await ctx.db.insert("canvases", {

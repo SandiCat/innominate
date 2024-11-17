@@ -1,8 +1,8 @@
-import { mutation, query } from "./_generated/server";
+import { myQuery, myMutation } from "./wrapper";
 import { v } from "convex/values";
 import { createEmptyNote } from "./notes";
 
-export const get = query({
+export const get = myQuery({
   args: { id: v.id("canvasItems") },
   handler: async (ctx, { id }) => {
     const canvasItem = await ctx.db.get(id);
@@ -15,7 +15,7 @@ export const get = query({
   },
 });
 
-export const setPosition = mutation({
+export const setPosition = myMutation({
   args: {
     id: v.id("canvasItems"),
     position: v.object({
@@ -28,7 +28,7 @@ export const setPosition = mutation({
   },
 });
 
-export const createNoteOnCanvas = mutation({
+export const createNoteOnCanvas = myMutation({
   args: {
     canvasId: v.id("canvases"),
     position: v.object({
@@ -51,7 +51,7 @@ export const createNoteOnCanvas = mutation({
   },
 });
 
-export const addNoteToCanvas = mutation({
+export const addNoteToCanvas = myMutation({
   args: {
     canvasId: v.id("canvases"),
     noteId: v.id("notes"),
@@ -69,7 +69,7 @@ export const addNoteToCanvas = mutation({
   },
 });
 
-export const removeFromCanvas = mutation({
+export const removeFromCanvas = myMutation({
   args: { id: v.id("canvasItems") },
   handler: async (ctx, { id }) => {
     await ctx.db.delete(id);

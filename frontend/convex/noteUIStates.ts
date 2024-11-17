@@ -1,5 +1,6 @@
+import { myQuery, myMutation } from "./wrapper";
 import { Doc, Id } from "./_generated/dataModel";
-import { mutation, query, QueryCtx } from "./_generated/server";
+import { QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 
 const DEFAULT_NOTE_UI_STATE = {
@@ -19,7 +20,7 @@ async function getByCompoundID(
     .first();
 }
 
-export const get = query({
+export const get = myQuery({
   args: { noteId: v.id("notes"), canvasItemId: v.id("canvasItems") },
   handler: async (ctx, { noteId, canvasItemId }) => {
     const noteUIState = await getByCompoundID(ctx, noteId, canvasItemId);
@@ -27,7 +28,7 @@ export const get = query({
   },
 });
 
-export const update = mutation({
+export const update = myMutation({
   args: {
     noteId: v.id("notes"),
     canvasItemId: v.id("canvasItems"),

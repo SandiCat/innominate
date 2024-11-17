@@ -13,10 +13,8 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
-import type * as auth from "../auth.js";
 import type * as canvasItems from "../canvasItems.js";
 import type * as canvases from "../canvases.js";
-import type * as http from "../http.js";
 import type * as human_hash_human_hash from "../human_hash/human_hash.js";
 import type * as human_hash_words from "../human_hash/words.js";
 import type * as migrations from "../migrations.js";
@@ -24,6 +22,7 @@ import type * as noteUIStates from "../noteUIStates.js";
 import type * as notes from "../notes.js";
 import type * as twitter_functions from "../twitter/functions.js";
 import type * as types from "../types.js";
+import type * as wrapper from "../wrapper.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -34,10 +33,8 @@ import type * as types from "../types.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
-  auth: typeof auth;
   canvasItems: typeof canvasItems;
   canvases: typeof canvases;
-  http: typeof http;
   "human_hash/human_hash": typeof human_hash_human_hash;
   "human_hash/words": typeof human_hash_words;
   migrations: typeof migrations;
@@ -45,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   notes: typeof notes;
   "twitter/functions": typeof twitter_functions;
   types: typeof types;
+  wrapper: typeof wrapper;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

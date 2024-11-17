@@ -1,4 +1,5 @@
-import { mutation, query, MutationCtx } from "./_generated/server";
+import { myQuery, myMutation } from "./wrapper";
+import { MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { parseNoteBody } from "../src/types";
 import { humanReadableID } from "./human_hash/human_hash";
@@ -24,7 +25,7 @@ export function buildSearchText(content: string, metadata: string) {
   return `${content}\n${metadata}`;
 }
 
-export const get = query({
+export const get = myQuery({
   // TODO: Allowing this to be optional simplifies chaining a `useQuery` with a
   // `useState`. I wonder if there's a better way.
   args: { noteId: v.optional(v.id("notes")) },
@@ -34,7 +35,7 @@ export const get = query({
   },
 });
 
-export const getChildren = query({
+export const getChildren = myQuery({
   args: { noteId: v.id("notes") },
   handler: async (ctx, { noteId }) => {
     return await ctx.db
@@ -45,7 +46,7 @@ export const getChildren = query({
 });
 
 // TODO: row level security
-export const update = mutation({
+export const update = myMutation({
   args: {
     noteId: v.id("notes"),
     content: v.string(),
@@ -79,7 +80,7 @@ export const update = mutation({
   },
 });
 
-export const deleteNote = mutation({
+export const deleteNote = myMutation({
   args: { noteId: v.id("notes") },
   handler: async (ctx, { noteId }) => {
     await ctx.db.delete(noteId);
@@ -113,7 +114,7 @@ export const deleteNote = mutation({
   },
 });
 
-export const createChild = mutation({
+export const createChild = myMutation({
   args: {
     parentId: v.id("notes"),
     userId: v.id("users"),
@@ -123,7 +124,7 @@ export const createChild = mutation({
   },
 });
 
-export const search = query({
+export const search = myQuery({
   args: {
     query: v.string(),
     userId: v.id("users"),
@@ -139,7 +140,7 @@ export const search = query({
   },
 });
 
-export const getMentionedBy = query({
+export const getMentionedBy = myQuery({
   args: { noteId: v.id("notes") },
   handler: async (ctx, { noteId }) => {
     const mentions = await ctx.db

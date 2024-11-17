@@ -1,7 +1,7 @@
-import { mutation } from "../_generated/server";
+import { myQuery, myMutation } from "../wrapper";
 import { v } from "convex/values";
 
-export const upsertUser = mutation({
+export const upsertUser = myMutation({
   args: {
     userId: v.string(),
     username: v.string(),
@@ -27,7 +27,7 @@ export const upsertUser = mutation({
   },
 });
 
-export const upsertTweets = mutation({
+export const upsertTweets = myMutation({
   args: {
     tweets: v.array(
       v.object({
@@ -65,7 +65,7 @@ export const upsertTweets = mutation({
   },
 });
 
-export const upsertMediaBatch = mutation({
+export const upsertMediaBatch = myMutation({
   args: {
     media: v.array(
       v.object({
