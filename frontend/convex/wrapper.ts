@@ -8,7 +8,6 @@ export const myQuery = customQuery(query, {
     if (identity === null) {
       throw new Error("Not authenticated");
     }
-    console.log("identity", identity);
     return { ctx, args };
   },
 });
@@ -20,7 +19,6 @@ export const myMutation = customMutation(mutation, {
     if (identity === null) {
       throw new Error("Not authenticated");
     }
-    console.log("identity", identity);
     return { ctx, args };
   },
 });
