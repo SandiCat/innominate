@@ -30,7 +30,7 @@ function EditContents({
   return (
     <textarea
       onMouseDown={(e) => e.stopPropagation()}
-      className="w-full resize-none outline-none select-text border-b-2"
+      className="w-full resize-none outline-none overflow-hidden select-text border-b-2"
       value={content}
       onChange={(e) => onChange(e.target.value)}
       autoFocus
