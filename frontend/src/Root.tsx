@@ -40,7 +40,7 @@ export function Root() {
   );
 }
 
-function AuthDispatcherUsingConvex() {
+export function AuthDispatcherUsingConvex() {
   return (
     <>
       <Authenticated>
@@ -53,7 +53,7 @@ function AuthDispatcherUsingConvex() {
   );
 }
 
-function AuthDispatcher() {
+export function AuthDispatcherWithTimeout() {
   const { isAuthenticated, isLoading, user } = useAuth0();
   const [delayElapsed, setDelayElapsed] = useState(false);
   // const { isLoading, isAuthenticated } = useConvexAuth();
@@ -81,15 +81,22 @@ function AuthDispatcher() {
 }
 
 function TestBackend() {
+  const { user } = useAuth0();
   const note = useQuery(api.notes.get, {
     noteId: "k571yyc8ecmczj47qb5rg9fse174qx7k" as Id<"notes">,
   });
-  return <div>{JSON.stringify(note)}</div>;
+  return (
+    <div>
+      {JSON.stringify(note)}
+      <br />
+      {JSON.stringify(user)}
+    </div>
+  );
 }
 
 function LogInScreen() {
-  const { loginWithRedirect } = useAuth0();
-  return <button onClick={() => loginWithRedirect()}>Log in</button>;
+  const { loginWithPopup } = useAuth0();
+  return <button onClick={() => loginWithPopup()}>Log in</button>;
 }
 
 function DeviceDispatcher() {
