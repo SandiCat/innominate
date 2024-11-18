@@ -22,6 +22,7 @@ import type * as noteUIStates from "../noteUIStates.js";
 import type * as notes from "../notes.js";
 import type * as twitter_functions from "../twitter/functions.js";
 import type * as types from "../types.js";
+import type * as users from "../users.js";
 import type * as wrapper from "../wrapper.js";
 
 /**
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   notes: typeof notes;
   "twitter/functions": typeof twitter_functions;
   types: typeof types;
+  users: typeof users;
   wrapper: typeof wrapper;
 }>;
 export declare const api: FilterApi<

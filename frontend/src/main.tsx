@@ -9,7 +9,7 @@ import { ClerkProvider, SignInButton, useAuth } from "@clerk/clerk-react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 
 import "./index.css";
-import { App as DesktopApp } from "./App";
+import { AppWithUser as DesktopApp } from "./App";
 import { App as MobileApp } from "./mobile/App";
 import { BrowserView, MobileView } from "react-device-detect";
 

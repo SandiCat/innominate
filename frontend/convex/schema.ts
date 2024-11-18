@@ -3,7 +3,9 @@ import { v } from "convex/values";
 import { twitterTables } from "./twitter/schema";
 import { vec2 } from "./types";
 export default defineSchema({
-  users: defineTable({}), // just the ID
+  users: defineTable({
+    clerkId: v.string(),
+  }).index("by_clerkId", ["clerkId"]),
   notes: defineTable({
     content: v.string(),
     metadata: v.string(),

@@ -1,4 +1,7 @@
-import { customQuery, customMutation } from "convex-helpers/server/customFunctions";
+import {
+  customQuery,
+  customMutation,
+} from "convex-helpers/server/customFunctions";
 import { mutation, query } from "./_generated/server";
 
 export const myQuery = customQuery(query, {
@@ -8,7 +11,8 @@ export const myQuery = customQuery(query, {
     if (identity === null) {
       throw new Error("Not authenticated");
     }
-    return { ctx, args };
+    const ctxWithIdentity = { ...ctx, identity };
+    return { ctx: ctxWithIdentity, args };
   },
 });
 
@@ -19,6 +23,7 @@ export const myMutation = customMutation(mutation, {
     if (identity === null) {
       throw new Error("Not authenticated");
     }
-    return { ctx, args };
+    const ctxWithIdentity = { ...ctx, identity };
+    return { ctx: ctxWithIdentity, args };
   },
 });

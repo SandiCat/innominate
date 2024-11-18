@@ -7,7 +7,6 @@ import { api } from "../convex/_generated/api";
 import { ReadOnlyNote } from "./components/Note";
 import { CanvasItem } from "./types";
 import { NoteTree } from "./components/NoteTree";
-const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID as Id<"users">;
 
 type ItemDragged =
   | { type: "canvas-item"; canvasItemId: Id<"canvasItems"> }
@@ -115,12 +114,25 @@ function SearchDrawer({
 
 const SEARCH_DRAG_OFFSET: Vec2.Vec2 = { x: -50, y: 0 };
 
-export function App() {
+export function AppWithUser() {
+  const [userId, setUserId] = useState<Id<"users"> | undefined>();
+  const upsertUser = useMutation(api.users.upsertUser);
+
+  useEffect(() => {
+    upsertUser().then(setUserId);
+  }, [upsertUser]);
+
+  if (userId === undefined) return <div>Loading user...</div>;
+
+  return <App userId={userId} />;
+}
+
+function App({ userId }: { userId: Id<"users"> }) {
   const [dragState, setDragState] = useState<DragState>({ type: "idle" });
   const [searchQuery, setSearchQuery] = useState("");
   const searchResults = useQuery(api.notes.search, {
     query: searchQuery,
-    userId: DEV_USER_ID,
+    userId,
   });
 
   const createNoteOnCanvas = useMutation(api.canvasItems.createNoteOnCanvas);
@@ -129,19 +141,19 @@ export function App() {
   const setCanvasOrigin = useMutation(api.canvases.setCanvasOrigin);
   const createCanvas = useMutation(api.canvases.createCanvas);
   const canvas = useQuery(api.canvases.getCanvasForUser, {
-    userId: DEV_USER_ID,
+    userId,
   });
 
   // create the canvas if it does not exist
   useEffect(() => {
     async function createCanvasIfNeeded() {
       if (canvas === null) {
-        await createCanvas({ userId: DEV_USER_ID });
+        await createCanvas({ userId });
       }
     }
 
     createCanvasIfNeeded();
-  }, [canvas, createCanvas]);
+  }, [canvas, createCanvas, userId]);
 
   if (canvas === undefined) {
     return <div className="p-4">Loading canvas...</div>;
