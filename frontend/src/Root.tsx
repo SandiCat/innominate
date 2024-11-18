@@ -28,24 +28,15 @@ function WithUser() {
 
   if (userId === undefined) return <div>Loading user...</div>;
 
-  return <Main userId={userId} />;
-}
-
-function Main({ userId }: { userId: Id<"users"> }) {
   return (
-    <main>
-      <Unauthenticated>
-        <SignInButton />
-      </Unauthenticated>
-      <Authenticated>
-        <BrowserView>
-          <DesktopApp userId={userId} />
-        </BrowserView>
-        <MobileView>
-          <MobileApp />
-        </MobileView>
-      </Authenticated>
-    </main>
+    <>
+      <BrowserView>
+        <DesktopApp userId={userId} />
+      </BrowserView>
+      <MobileView>
+        <MobileApp />
+      </MobileView>
+    </>
   );
 }
 
@@ -57,7 +48,14 @@ export function Root() {
         publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
       >
         <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-          <WithUser />
+          <main>
+            <Unauthenticated>
+              <SignInButton />
+            </Unauthenticated>
+            <Authenticated>
+              <WithUser />
+            </Authenticated>
+          </main>
         </ConvexProviderWithClerk>
       </ClerkProvider>
     </StrictMode>
