@@ -114,20 +114,7 @@ function SearchDrawer({
 
 const SEARCH_DRAG_OFFSET: Vec2.Vec2 = { x: -50, y: 0 };
 
-export function AppWithUser() {
-  const [userId, setUserId] = useState<Id<"users"> | undefined>();
-  const upsertUser = useMutation(api.users.upsertUser);
-
-  useEffect(() => {
-    upsertUser().then(setUserId);
-  }, [upsertUser]);
-
-  if (userId === undefined) return <div>Loading user...</div>;
-
-  return <App userId={userId} />;
-}
-
-function App({ userId }: { userId: Id<"users"> }) {
+export function App({ userId }: { userId: Id<"users"> }) {
   const [dragState, setDragState] = useState<DragState>({ type: "idle" });
   const [searchQuery, setSearchQuery] = useState("");
   const searchResults = useQuery(api.notes.search, {
