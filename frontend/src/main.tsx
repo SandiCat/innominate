@@ -1,28 +1,38 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import {
+  Authenticated,
+  ConvexReactClient,
+  Unauthenticated,
+} from "convex/react";
+import { ClerkProvider, SignInButton, useAuth } from "@clerk/clerk-react";
+import { ConvexProviderWithClerk } from "convex/react-clerk";
 
 import "./index.css";
-import { AuthDispatcherUsingConvex } from "./Root";
-import { Auth0Provider } from "@auth0/auth0-react";
-import { ConvexProviderWithAuth0 } from "convex/react-auth0";
-import { ConvexReactClient } from "convex/react";
+import { App as DesktopApp } from "./App";
+import { App as MobileApp } from "./mobile/App";
+import { BrowserView, MobileView } from "react-device-detect";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <Auth0Provider
-      domain="dev-rlghwsax05c51ygr.us.auth0.com"
-      clientId="Y9W8ioT41AC6iZIuSmaSZeDSIanYNJia"
-      authorizationParams={{
-        redirect_uri: window.location.origin,
-      }}
-      useRefreshTokens={true}
-      cacheLocation="localstorage"
-    >
-      <ConvexProviderWithAuth0 client={convex}>
-        <AuthDispatcherUsingConvex />
-      </ConvexProviderWithAuth0>
-    </Auth0Provider>
+    <ClerkProvider publishableKey="pk_test_YW11c2VkLWhpcHBvLTg2LmNsZXJrLmFjY291bnRzLmRldiQ">
+      <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+        <main>
+          <Unauthenticated>
+            <SignInButton />
+          </Unauthenticated>
+          <Authenticated>
+            <BrowserView>
+              <DesktopApp />
+            </BrowserView>
+            <MobileView>
+              <MobileApp />
+            </MobileView>
+          </Authenticated>
+        </main>
+      </ConvexProviderWithClerk>
+    </ClerkProvider>
   </StrictMode>
 );
