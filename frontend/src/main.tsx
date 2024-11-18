@@ -15,8 +15,11 @@ import { BrowserView, MobileView } from "react-device-detect";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
+const title = import.meta.env.DEV ? "[DEV] Innominate" : "Innominate";
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
+    <title>{title}</title>
     <ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}>
       <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
         <main>
