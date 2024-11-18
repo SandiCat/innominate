@@ -1,10 +1,12 @@
-import { StrictMode } from "react";
+import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Authenticated,
   AuthLoading,
   ConvexReactClient,
   Unauthenticated,
+  useConvexAuth,
+  useQuery,
 } from "convex/react";
 import { ConvexProviderWithAuth0 } from "convex/react-auth0";
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
@@ -13,6 +15,8 @@ import "./index.css";
 import { App as DesktopApp } from "./App";
 import { App as MobileApp } from "./mobile/App";
 import { BrowserView, MobileView } from "react-device-detect";
+import { api } from "../convex/_generated/api";
+import { Id } from "../convex/_generated/dataModel";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
@@ -29,17 +33,58 @@ export function Root() {
         cacheLocation="localstorage"
       >
         <ConvexProviderWithAuth0 client={convex}>
-          <Authenticated>
-            <DeviceDispatcher />
-          </Authenticated>
-          <Unauthenticated>
-            <LogInScreen />
-          </Unauthenticated>
-          <AuthLoading>Still loading</AuthLoading>
+          <AuthDispatcherUsingConvex />
         </ConvexProviderWithAuth0>
       </Auth0Provider>
     </StrictMode>
   );
+}
+
+function AuthDispatcherUsingConvex() {
+  return (
+    <>
+      <Authenticated>
+        <TestBackend />
+      </Authenticated>
+      <Unauthenticated>
+        <LogInScreen />
+      </Unauthenticated>
+    </>
+  );
+}
+
+function AuthDispatcher() {
+  const { isAuthenticated, isLoading, user } = useAuth0();
+  const [delayElapsed, setDelayElapsed] = useState(false);
+  // const { isLoading, isAuthenticated } = useConvexAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      setTimeout(() => {
+        setDelayElapsed(true);
+      }, 10000);
+    }
+  }, [isAuthenticated]);
+
+  if (isLoading) {
+    return <div>Still loading</div>;
+  }
+
+  if (isAuthenticated) {
+    if (delayElapsed) {
+      return <TestBackend />;
+    }
+    return <div>{JSON.stringify(user)}</div>;
+  }
+
+  return <LogInScreen />;
+}
+
+function TestBackend() {
+  const note = useQuery(api.notes.get, {
+    noteId: "k571yyc8ecmczj47qb5rg9fse174qx7k" as Id<"notes">,
+  });
+  return <div>{JSON.stringify(note)}</div>;
 }
 
 function LogInScreen() {
