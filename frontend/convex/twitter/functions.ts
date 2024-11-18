@@ -1,4 +1,4 @@
-import { myQuery, myMutation } from "../wrapper";
+import { myMutation } from "../wrapper";
 import { v } from "convex/values";
 
 export const upsertUser = myMutation({

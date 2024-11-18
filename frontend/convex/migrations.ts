@@ -1,5 +1,4 @@
 import { internalMutation } from "./_generated/server";
-import { v } from "convex/values";
 import { buildSearchText } from "./notes";
 
 export const addMetadata = internalMutation({

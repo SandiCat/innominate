@@ -4,7 +4,7 @@ import { match } from "ts-pattern";
 import { Id } from "../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
-import { Note, ReadOnlyNote } from "./components/Note";
+import { ReadOnlyNote } from "./components/Note";
 import { CanvasItem } from "./types";
 import { NoteTree } from "./components/NoteTree";
 const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID as Id<"users">;

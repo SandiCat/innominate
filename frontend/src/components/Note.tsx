@@ -2,9 +2,9 @@ import { useRef, useState } from "react";
 import { Id } from "../../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { match, P } from "ts-pattern";
+import { match } from "ts-pattern";
 import { parseNoteBody } from "../types";
-import { FiCheck, FiEdit2, FiX } from "react-icons/fi";
+import { FiX } from "react-icons/fi";
 import { MdRemoveCircleOutline } from "react-icons/md";
 import {
   FaCheck,
