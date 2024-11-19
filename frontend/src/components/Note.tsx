@@ -3,7 +3,6 @@ import { Id } from "../../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { match } from "ts-pattern";
-import { parseNoteBody } from "../types";
 import { FiX } from "react-icons/fi";
 import { MdRemoveCircleOutline } from "react-icons/md";
 import {
@@ -16,7 +15,8 @@ import {
   FaReply,
   FaTrash,
 } from "react-icons/fa";
-import { insertAt } from "../utils/string";
+import { NoteBody } from "./note/NoteBody";
+import { addLink } from "../utils";
 
 function EditContents({
   content,
@@ -73,39 +73,6 @@ function EditMetadata({
       placeholder="metadata..."
       className="w-full resize-none outline-none select-text"
     />
-  );
-}
-
-function MentionSpan({ noteId }: { noteId: Id<"notes"> }) {
-  const note = useQuery(api.notes.get, { noteId });
-
-  if (note === null) {
-    return <span className="bg-gray-200 px-1 rounded">broken link</span>;
-  } else {
-    return (
-      <span
-        className="bg-blue-100 px-1 rounded cursor-help"
-        title={note === undefined ? "Loading..." : note.content}
-      >
-        @{note === undefined ? "Loading..." : note.humanReadableId}
-      </span>
-    );
-  }
-}
-
-function ViewMode({ content }: { content: string }) {
-  if (!content) return <div className="text-gray-400">Empty...</div>;
-
-  return (
-    <div className="whitespace-pre-wrap">
-      {parseNoteBody(content).map((token, i) =>
-        token.type === "text" ? (
-          <span key={i}>{token.text}</span>
-        ) : (
-          <MentionSpan key={i} noteId={token.noteId} />
-        )
-      )}
-    </div>
   );
 }
 
@@ -227,16 +194,11 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
       throw new Error("Adding link in invalid state");
     }
 
-    const linkText = `[[${linkNoteId}]]`;
-
-    const newContent =
-      state.linkModalState.insertPosition === undefined
-        ? state.draftContent + linkText
-        : insertAt(
-            state.draftContent,
-            linkText,
-            state.linkModalState.insertPosition
-          );
+    const newContent = addLink(
+      state.draftContent,
+      linkNoteId,
+      state.linkModalState.insertPosition
+    );
 
     setState({
       ...state,
@@ -278,7 +240,7 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
           </>
         ) : (
           <>
-            <ViewMode content={note.content} />
+            <NoteBody content={note.content} />
             {isHovered && (
               <div className="absolute bottom-2 right-2 ">
                 <ViewNoteButtons
@@ -364,7 +326,7 @@ export function ReadOnlyNote({ noteId }: { noteId: Id<"notes"> }) {
   return (
     <div className="w-full max-w-[350px] max-h-[120px] truncate bg-white rounded-lg shadow-lg cursor-grab relative select-none">
       <div className="p-4">
-        <ViewMode content={note.content} />
+        <NoteBody content={note.content} />
       </div>
       <Backlinks noteId={noteId} />
     </div>

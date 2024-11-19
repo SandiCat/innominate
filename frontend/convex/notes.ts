@@ -127,7 +127,7 @@ export const createChild = myMutation({
     userId: v.id("users"),
   },
   handler: async (ctx, { parentId, userId }) => {
-    await createEmptyNote(ctx, userId, parentId);
+    return await createEmptyNote(ctx, userId, parentId);
   },
 });
 

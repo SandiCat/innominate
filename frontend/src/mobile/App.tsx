@@ -34,7 +34,11 @@ export function App({ userId }: { userId: Id<"users"> }) {
       />
     ))
     .with({ type: "edit" }, ({ noteId }) => (
-      <WithNoteId noteId={noteId} onGoBack={handleGoBack} />
+      <WithNoteId
+        noteId={noteId}
+        onGoBack={handleGoBack}
+        onOpenNote={handleSelectNote}
+      />
     ))
     .exhaustive();
 }
