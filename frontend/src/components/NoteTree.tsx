@@ -7,7 +7,6 @@ interface NoteTreeProps {
   rootNodeId: Id<"notes">;
   canvasItemId: Id<"canvasItems">;
   onDragStart?: (e: React.MouseEvent) => void;
-  isRoot: boolean;
 }
 
 export function NoteTree({
@@ -25,12 +24,19 @@ export function NoteTree({
   );
 }
 
+interface NoteTreeRecProps {
+  rootNodeId: Id<"notes">;
+  canvasItemId: Id<"canvasItems">;
+  onDragStart?: (e: React.MouseEvent) => void;
+  isRoot: boolean;
+}
+
 function NoteTreeRec({
   rootNodeId,
   canvasItemId,
   onDragStart,
   isRoot,
-}: NoteTreeProps) {
+}: NoteTreeRecProps) {
   const node = useQuery(api.notes.get, { noteId: rootNodeId });
   const children = useQuery(api.notes.getChildren, { noteId: rootNodeId });
   const noteUIState = useQuery(api.noteUIStates.get, {
