@@ -1,20 +1,40 @@
-import { EditNote } from "./EditNote";
-import { useQuery } from "convex/react";
+import { WithNoteId } from "./EditNote";
+import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import { ViewNote } from "./ViewNote";
 import { useState } from "react";
+import { NoteList } from "./NoteList";
+import { match } from "ts-pattern";
 
-const TEST_NOTE_ID = "k570jgndphxpdhksjdx54zbnxh74h1q2" as Id<"notes">;
+type State = { type: "list" } | { type: "edit"; noteId: Id<"notes"> };
 
-export function App() {
-  const note = useQuery(api.notes.get, { noteId: TEST_NOTE_ID });
-  const [state, setState] = useState<"view" | "edit">("view");
-  if (note === undefined) return <div>Loading...</div>;
-  if (note === null) return <div>Note not found</div>;
-  return state === "view" ? (
-    <ViewNote note={note} onEdit={() => setState("edit")} />
-  ) : (
-    <EditNote note={note} onSave={() => setState("view")} />
-  );
+export function App({ userId }: { userId: Id<"users"> }) {
+  const [state, setState] = useState<State>({ type: "list" });
+  const createNote = useMutation(api.notes.create);
+
+  const handleCreateNote = async () => {
+    const noteId = await createNote({ userId });
+    setState({ type: "edit", noteId });
+  };
+
+  const handleSelectNote = (noteId: Id<"notes">) => {
+    setState({ type: "edit", noteId });
+  };
+
+  const handleGoBack = () => {
+    setState({ type: "list" });
+  };
+
+  return match(state)
+    .with({ type: "list" }, () => (
+      <NoteList
+        userId={userId}
+        onSelect={handleSelectNote}
+        onCreate={handleCreateNote}
+      />
+    ))
+    .with({ type: "edit" }, ({ noteId }) => (
+      <WithNoteId noteId={noteId} onGoBack={handleGoBack} />
+    ))
+    .exhaustive();
 }

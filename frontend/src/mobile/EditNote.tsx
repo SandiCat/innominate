@@ -7,14 +7,28 @@ import { ReadOnlyNote } from "../components/Note";
 
 type ModalState = "none" | "parent";
 
+export function WithNoteId({
+  noteId,
+  onGoBack,
+}: {
+  noteId: Id<"notes">;
+  onGoBack: () => void;
+}) {
+  const note = useQuery(api.notes.get, { noteId });
+  if (note === undefined) return <div>Loading...</div>;
+  else if (note === null) throw new Error("Note not found");
+  else return <EditNote note={note} onGoBack={onGoBack} />;
+}
+
 export function EditNote({
   note,
-  onSave,
+  onGoBack,
 }: {
   note: Doc<"notes">;
-  onSave: () => void;
+  onGoBack: () => void;
 }) {
   const updateNote = useMutation(api.notes.update);
+  const deleteNote = useMutation(api.notes.deleteNote);
   const [content, setContent] = useState(note.content);
   const [metadata, setMetadata] = useState(note.metadata);
   const [modalState, setModalState] = useState<ModalState>("none");
@@ -22,6 +36,7 @@ export function EditNote({
     note.parentId
   );
   const parentNote = useQuery(api.notes.get, { noteId: parentId });
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const handleSave = async () => {
     await updateNote({
@@ -30,7 +45,12 @@ export function EditNote({
       metadata,
       parentId,
     });
-    onSave();
+    onGoBack();
+  };
+
+  const handleDelete = async () => {
+    await deleteNote({ noteId: note._id });
+    onGoBack();
   };
 
   const handleSetParent = async (parentId: Id<"notes">) => {
@@ -72,6 +92,18 @@ export function EditNote({
             className="text-2xl hover:cursor-pointer"
             onClick={handleSave}
           />
+          {/* TODO: duplicate code */}
+          {confirmDelete ? (
+            <Icons.FaCheck
+              className="text-2xl hover:cursor-pointer"
+              onClick={handleDelete}
+            />
+          ) : (
+            <Icons.FaTrash
+              className="text-2xl hover:cursor-pointer"
+              onClick={() => setConfirmDelete(true)}
+            />
+          )}
           <Icons.FaLink
             className="text-2xl hover:cursor-pointer"
             onClick={() => setModalState("parent")}

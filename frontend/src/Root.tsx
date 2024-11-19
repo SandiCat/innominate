@@ -34,7 +34,7 @@ function WithUser() {
         <DesktopApp userId={userId} />
       </BrowserView>
       <MobileView>
-        <MobileApp />
+        <MobileApp userId={userId} />
       </MobileView>
     </>
   );

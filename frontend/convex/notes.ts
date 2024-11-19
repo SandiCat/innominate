@@ -114,6 +114,13 @@ export const deleteNote = myMutation({
   },
 });
 
+export const create = myMutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, { userId }) => {
+    return await createEmptyNote(ctx, userId);
+  },
+});
+
 export const createChild = myMutation({
   args: {
     parentId: v.id("notes"),
@@ -130,13 +137,36 @@ export const search = myQuery({
     userId: v.id("users"),
   },
   handler: async (ctx, { query, userId }) => {
-    if (!query.trim()) return [];
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) return [];
     return await ctx.db
       .query("notes")
       .withSearchIndex("search_searchText", (q) =>
-        q.search("searchText", query).eq("userId", userId)
+        q.search("searchText", trimmedQuery).eq("userId", userId)
       )
       .take(10);
+  },
+});
+
+export const searchOrRecent = myQuery({
+  args: { query: v.string(), userId: v.id("users") },
+  handler: async (ctx, { query, userId }) => {
+    const trimmedQuery = query.trim();
+    const numResults = 50;
+    if (trimmedQuery) {
+      return await ctx.db
+        .query("notes")
+        .withSearchIndex("search_searchText", (q) =>
+          q.search("searchText", trimmedQuery).eq("userId", userId)
+        )
+        .take(numResults);
+    } else {
+      return await ctx.db
+        .query("notes")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .order("desc")
+        .take(numResults);
+    }
   },
 });
 
