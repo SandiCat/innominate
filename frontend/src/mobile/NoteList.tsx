@@ -1,9 +1,9 @@
-import { NoteBody } from "@/components/note/NoteBody";
 import { api } from "../../convex/_generated/api";
 import { Doc, Id } from "../../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import * as Icons from "react-icons/fa";
+import { ReadOnlyNote } from "@/components/Note";
 
 export function NoteList({
   userId,
@@ -71,11 +71,7 @@ function NoteItem({
       className="p-4 border-b hover:bg-gray-50 active:bg-gray-100 relative"
     >
       <div onClick={() => onSelect(note._id)}>
-        {note.content === "" ? (
-          <div className="text-gray-400">Empty...</div>
-        ) : (
-          <NoteBody content={note.content} />
-        )}
+        <ReadOnlyNote noteId={note._id} />
       </div>
       <button
         onClick={handleReply}
