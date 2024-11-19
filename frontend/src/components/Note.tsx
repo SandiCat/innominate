@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Id } from "../../convex/_generated/dataModel";
+import { Doc, Id } from "../../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { match } from "ts-pattern";
@@ -13,6 +13,7 @@ import {
   FaLevelUpAlt,
   FaLink,
   FaReply,
+  FaSearch,
   FaTrash,
 } from "react-icons/fa";
 import { NoteBody } from "./note/NoteBody";
@@ -56,6 +57,42 @@ function autoResizeRef(element: HTMLTextAreaElement | null) {
 
 function autoResizeOnInput(e: React.FormEvent<HTMLTextAreaElement>) {
   fitHeightToContents(e.target as HTMLTextAreaElement);
+}
+
+function ParentSpan({ parentId }: { parentId: Id<"notes"> }) {
+  const parentNote = useQuery(api.notes.get, { noteId: parentId });
+  if (!parentNote) return null;
+  const display = shortDisplay(parentNote);
+  return (
+    <span className="bg-gray-200 rounded-xl px-1 text-sm flex items-center">
+      {display}
+    </span>
+  );
+}
+
+function EditParent({
+  parentId,
+  onSearchParent,
+  onRemoveParent,
+}: {
+  parentId: Id<"notes"> | undefined;
+  onSearchParent: () => void;
+  onRemoveParent: () => void;
+}) {
+  return (
+    <div className="flex flex-row gap-2">
+      {parentId === undefined ? (
+        <span className="text-gray-500">no parent</span>
+      ) : (
+        <ParentSpan parentId={parentId} />
+      )}
+      <ButtonIcon icon={<FaSearch />} onClick={async () => onSearchParent()} />
+      <ButtonIcon
+        icon={<MdRemoveCircleOutline />}
+        onClick={async () => onRemoveParent()}
+      />
+    </div>
+  );
 }
 
 function EditTitle({
@@ -118,23 +155,26 @@ interface NoteProps {
   noteId: Id<"notes">;
   canvasItemId: Id<"canvasItems">;
   onDragStart?: (e: React.MouseEvent) => void;
+  isRoot: boolean;
 }
 
 type NoteState =
   | { mode: "viewing" }
   | {
       mode: "editing";
+      draftParentId: Id<"notes"> | undefined;
       draftTitle: string;
       draftContent: string;
       draftMetadata: string;
-      linkModalState: LinkModalState;
+      searchModalState: SearchModalState;
     };
 
-type LinkModalState =
+type SearchModalState =
   | { mode: "closed" }
-  | { mode: "open"; insertPosition: number };
+  | { mode: "link"; insertPosition: number }
+  | { mode: "parent" };
 
-export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
+export function Note({ noteId, canvasItemId, onDragStart, isRoot }: NoteProps) {
   const [state, setState] = useState<NoteState>({ mode: "viewing" });
   const textArea = useRef<HTMLTextAreaElement>();
   const [isHovered, setIsHovered] = useState(false);
@@ -143,20 +183,20 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
 
   if (!note) return null;
 
-  const showingLinkModal =
-    state.mode === "editing" && state.linkModalState.mode === "open";
+  const showingSearchModal =
+    state.mode === "editing" && state.searchModalState.mode !== "closed";
 
   const toggleMode = async () => {
     await match(state)
       .with(
         { mode: "editing" },
-        async ({ draftTitle, draftContent, draftMetadata }) => {
+        async ({ draftParentId, draftTitle, draftContent, draftMetadata }) => {
           await updateNote({
             noteId,
+            parentId: draftParentId,
             title: draftTitle,
             content: draftContent,
             metadata: draftMetadata,
-            parentId: note.parentId,
           });
           setState({ mode: "viewing" });
         }
@@ -164,10 +204,11 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
       .with({ mode: "viewing" }, async () => {
         setState({
           mode: "editing",
+          draftParentId: note.parentId,
           draftTitle: note.title,
           draftContent: note.content,
           draftMetadata: note.metadata,
-          linkModalState: { mode: "closed" },
+          searchModalState: { mode: "closed" },
         });
       })
       .exhaustive();
@@ -206,37 +247,71 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
       throw new Error("Missing text area when inserting a link");
     }
 
-    if (state.linkModalState.mode === "open") {
+    if (state.searchModalState.mode === "link") {
       setState({
         ...state,
-        linkModalState: { mode: "closed" },
+        searchModalState: { mode: "closed" },
       });
     } else {
       const insertPosition = textArea.current.selectionStart;
 
       setState({
         ...state,
-        linkModalState: { mode: "open", insertPosition },
+        searchModalState: {
+          mode: "link",
+          insertPosition,
+        },
       });
     }
   };
 
-  const handleAddLink = (linkNoteId: Id<"notes">) => {
-    if (state.mode !== "editing" || state.linkModalState.mode !== "open") {
+  const handleModalSelectNote = (noteId: Id<"notes">) => {
+    if (state.mode !== "editing" || state.searchModalState.mode === "closed") {
       throw new Error("Adding link in invalid state");
     }
 
-    const newContent = addLink(
-      state.draftContent,
-      linkNoteId,
-      state.linkModalState.insertPosition
-    );
+    if (state.searchModalState.mode === "link") {
+      const newContent = addLink(
+        state.draftContent,
+        noteId,
+        state.searchModalState.insertPosition
+      );
+      setState({
+        ...state,
+        searchModalState: { mode: "closed" },
+        draftContent: newContent,
+      });
+    } else if (state.searchModalState.mode === "parent") {
+      setState({
+        ...state,
+        searchModalState: { mode: "closed" },
+        draftParentId: noteId,
+      });
+    }
+  };
 
-    setState({
-      ...state,
-      linkModalState: { mode: "closed" },
-      draftContent: newContent,
-    });
+  const handleCloseSearchModal = () => {
+    if (state.mode !== "editing") {
+      throw new Error("Cannot close search modal in non-editing mode");
+    }
+
+    setState({ ...state, searchModalState: { mode: "closed" } });
+  };
+
+  const handleSearchParent = () => {
+    if (state.mode !== "editing") {
+      throw new Error("Cannot search parent in non-editing mode");
+    }
+
+    setState({ ...state, searchModalState: { mode: "parent" } });
+  };
+
+  const handleRemoveParent = () => {
+    if (state.mode !== "editing") {
+      throw new Error("Cannot remove parent in non-editing mode");
+    }
+
+    setState({ ...state, draftParentId: undefined });
   };
 
   const noteUI = (
@@ -249,6 +324,11 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
       <div className="p-4 flex-1 flex flex-col gap-2">
         {state.mode === "editing" ? (
           <>
+            <EditParent
+              parentId={state.draftParentId}
+              onSearchParent={handleSearchParent}
+              onRemoveParent={handleRemoveParent}
+            />
             <EditTitle title={state.draftTitle} onChange={handleTitleChange} />
             <EditContents
               content={state.draftContent}
@@ -271,10 +351,7 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
           </>
         ) : (
           <>
-            {note.title && (
-              <div className="text-lg font-semibold mb-2">{note.title}</div>
-            )}
-            <NoteBody content={note.content} />
+            <ViewNote showParent={isRoot} note={note} />
             {isHovered && (
               <div className="absolute bottom-2 right-2 ">
                 <ViewNoteButtons
@@ -296,12 +373,12 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
   return (
     <div className="relative">
       {noteUI}
-      {showingLinkModal && (
+      {showingSearchModal && (
         <div className="absolute left-full pl-4 top-0 z-20">
-          <LinkModal
+          <SearchModal
             userId={note.userId}
-            onAddLink={handleAddLink}
-            onClose={handleToggleLinkModal}
+            onSelectNote={handleModalSelectNote}
+            onClose={handleCloseSearchModal}
           />
         </div>
       )}
@@ -309,13 +386,13 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
   );
 }
 
-function LinkModal({
+function SearchModal({
   userId,
-  onAddLink,
+  onSelectNote,
   onClose,
 }: {
   userId: Id<"users">;
-  onAddLink: (noteId: Id<"notes">) => void;
+  onSelectNote: (noteId: Id<"notes">) => void;
   onClose: () => void;
 }) {
   const [query, setQuery] = useState("");
@@ -323,7 +400,7 @@ function LinkModal({
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && notes && notes.length > 0) {
-      onAddLink(notes[0]._id);
+      onSelectNote(notes[0]._id);
     }
   };
 
@@ -344,7 +421,7 @@ function LinkModal({
         <div
           key={note._id}
           className="p-2 hover:bg-gray-100 rounded-md cursor-pointer truncate"
-          onClick={() => onAddLink(note._id)}
+          onClick={() => onSelectNote(note._id)}
           title={note.content}
         >
           {note.content}
@@ -354,13 +431,33 @@ function LinkModal({
   );
 }
 
+function ViewNote({
+  showParent,
+  note,
+}: {
+  showParent: boolean;
+  note: Doc<"notes">;
+}) {
+  return (
+    <>
+      <div className="flex flex-row gap-2">
+        {showParent && note.parentId && <ParentSpan parentId={note.parentId} />}
+        {note.title && (
+          <div className="text-lg font-semibold mb-2">{note.title}</div>
+        )}
+      </div>
+      <NoteBody content={note.content} />
+    </>
+  );
+}
+
 export function ReadOnlyNote({ noteId }: { noteId: Id<"notes"> }) {
   const note = useQuery(api.notes.get, { noteId });
   if (!note) return null;
   return (
     <div className="w-full max-w-[350px] max-h-[120px] truncate bg-white rounded-lg shadow-lg cursor-grab relative select-none">
       <div className="p-4">
-        <NoteBody content={note.content} />
+        <ViewNote showParent={true} note={note} />
       </div>
       <Backlinks noteId={noteId} />
     </div>
