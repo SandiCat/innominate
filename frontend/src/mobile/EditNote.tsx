@@ -251,7 +251,7 @@ function SearchModal({
               className="p-4 border-b hover:bg-gray-100 cursor-pointer"
               onClick={() => onSelect(note._id)}
             >
-              {note.content || "(empty)"}
+              {note.title || note.content || "(empty)"}
             </div>
           ))}
         </div>

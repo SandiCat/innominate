@@ -424,7 +424,7 @@ function SearchModal({
           onClick={() => onSelectNote(note._id)}
           title={note.content}
         >
-          {note.content}
+          {note.title || note.content}
         </div>
       ))}
     </div>
