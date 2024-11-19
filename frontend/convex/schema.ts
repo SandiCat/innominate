@@ -8,6 +8,7 @@ export default defineSchema({
     clerkId: v.string(),
   }).index("by_clerkId", ["clerkId"]),
   notes: defineTable({
+    title: v.string(),
     content: v.string(),
     metadata: v.string(),
     searchText: v.string(), // we combine text fields into one and search over that

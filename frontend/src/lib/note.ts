@@ -1,4 +1,4 @@
-import { Id } from "convex/_generated/dataModel";
+import { Doc, Id } from "convex/_generated/dataModel";
 import { insertAt } from "./utils/string";
 
 export function addLink(
@@ -12,4 +12,16 @@ export function addLink(
     return content + linkText;
   }
   return insertAt(content, linkText, insertPosition);
+}
+
+export function buildSearchText(
+  title: string,
+  content: string,
+  metadata: string
+) {
+  return `${title}\n${content}\n${metadata}`;
+}
+
+export function shortDisplay(note: Doc<"notes">) {
+  return note.title || note.humanReadableId;
 }

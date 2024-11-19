@@ -4,7 +4,7 @@ import * as Icons from "react-icons/fa";
 import { api } from "../../convex/_generated/api";
 import { Doc, Id } from "../../convex/_generated/dataModel";
 import { ReadOnlyNote } from "../components/Note";
-import { addLink } from "@/utils";
+import { addLink } from "@/lib/note";
 
 type ModalState = "none" | "parent" | "link";
 

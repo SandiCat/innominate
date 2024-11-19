@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { parseNoteBody } from "../src/types";
 import { humanReadableID } from "./human_hash/human_hash";
 import { Id } from "./_generated/dataModel";
+import { buildSearchText } from "@/lib/note";
 
 export async function createEmptyNote(
   ctx: MutationCtx,
@@ -12,6 +13,7 @@ export async function createEmptyNote(
 ): Promise<Id<"notes">> {
   const humanReadableId = humanReadableID();
   return ctx.db.insert("notes", {
+    title: "",
     content: "",
     metadata: "",
     parentId,
@@ -19,10 +21,6 @@ export async function createEmptyNote(
     humanReadableId,
     searchText: "",
   });
-}
-
-export function buildSearchText(content: string, metadata: string) {
-  return `${content}\n${metadata}`;
 }
 
 export const get = myQuery({
@@ -49,12 +47,13 @@ export const getChildren = myQuery({
 export const update = myMutation({
   args: {
     noteId: v.id("notes"),
+    title: v.string(),
     content: v.string(),
     metadata: v.string(),
     // TODO: undefined could mean both "don't change parent" and "remove parent"
     parentId: v.optional(v.id("notes")),
   },
-  handler: async (ctx, { noteId, content, metadata, parentId }) => {
+  handler: async (ctx, { noteId, title, content, metadata, parentId }) => {
     // First delete ALL existing mentions for this note
     await ctx.db
       .query("mentions")
@@ -74,9 +73,15 @@ export const update = myMutation({
         )
     );
 
-    const searchText = buildSearchText(content, metadata);
+    const searchText = buildSearchText(title, content, metadata);
 
-    await ctx.db.patch(noteId, { content, metadata, searchText, parentId });
+    await ctx.db.patch(noteId, {
+      title,
+      content,
+      metadata,
+      searchText,
+      parentId,
+    });
   },
 });
 

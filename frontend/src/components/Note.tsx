@@ -16,7 +16,7 @@ import {
   FaTrash,
 } from "react-icons/fa";
 import { NoteBody } from "./note/NoteBody";
-import { addLink } from "../utils";
+import { addLink, shortDisplay } from "@/lib/note";
 
 function EditContents({
   content,
@@ -58,6 +58,24 @@ function autoResizeOnInput(e: React.FormEvent<HTMLTextAreaElement>) {
   fitHeightToContents(e.target as HTMLTextAreaElement);
 }
 
+function EditTitle({
+  title,
+  onChange,
+}: {
+  title: string;
+  onChange: (title: string) => void;
+}) {
+  return (
+    <input
+      value={title}
+      onMouseDown={(e) => e.stopPropagation()}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder="title..."
+      className="w-full resize-none outline-none select-text text-lg font-semibold"
+    />
+  );
+}
+
 function EditMetadata({
   metadata,
   onChange,
@@ -88,7 +106,7 @@ function Backlinks({ noteId }: { noteId: Id<"notes"> }) {
         <span key={note._id}>
           {i > 0 && ", "}
           <span className="hover:underline cursor-help" title={note.content}>
-            @{note.humanReadableId}
+            @{shortDisplay(note)}
           </span>
         </span>
       ))}
@@ -106,6 +124,7 @@ type NoteState =
   | { mode: "viewing" }
   | {
       mode: "editing";
+      draftTitle: string;
       draftContent: string;
       draftMetadata: string;
       linkModalState: LinkModalState;
@@ -129,24 +148,37 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
 
   const toggleMode = async () => {
     await match(state)
-      .with({ mode: "editing" }, async ({ draftContent, draftMetadata }) => {
-        await updateNote({
-          noteId,
-          content: draftContent,
-          metadata: draftMetadata,
-          parentId: note.parentId,
-        });
-        setState({ mode: "viewing" });
-      })
+      .with(
+        { mode: "editing" },
+        async ({ draftTitle, draftContent, draftMetadata }) => {
+          await updateNote({
+            noteId,
+            title: draftTitle,
+            content: draftContent,
+            metadata: draftMetadata,
+            parentId: note.parentId,
+          });
+          setState({ mode: "viewing" });
+        }
+      )
       .with({ mode: "viewing" }, async () => {
         setState({
           mode: "editing",
+          draftTitle: note.title,
           draftContent: note.content,
           draftMetadata: note.metadata,
           linkModalState: { mode: "closed" },
         });
       })
       .exhaustive();
+  };
+
+  const handleTitleChange = (title: string) => {
+    if (state.mode === "editing") {
+      setState({ ...state, draftTitle: title });
+    } else {
+      throw new Error("Cannot change title in non-editing mode");
+    }
   };
 
   const handleContentChange = (content: string) => {
@@ -214,32 +246,34 @@ export function Note({ noteId, canvasItemId, onDragStart }: NoteProps) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="p-4 flex-1 flex">
+      <div className="p-4 flex-1 flex flex-col gap-2">
         {state.mode === "editing" ? (
           <>
-            <div className="flex-1 flex flex-col gap-2">
-              <EditContents
-                content={state.draftContent}
-                onChange={handleContentChange}
-                outerRef={textArea}
-              />
+            <EditTitle title={state.draftTitle} onChange={handleTitleChange} />
+            <EditContents
+              content={state.draftContent}
+              onChange={handleContentChange}
+              outerRef={textArea}
+            />
 
-              <div className="flex flex-row gap-2">
-                <EditMetadata
-                  metadata={state.draftMetadata}
-                  onChange={handleMetadataChange}
+            <div className="flex flex-row gap-2">
+              <EditMetadata
+                metadata={state.draftMetadata}
+                onChange={handleMetadataChange}
+              />
+              <div className="self-end justify-self-end">
+                <EditNoteButtons
+                  toggleMode={toggleMode}
+                  onToggleLinkModal={handleToggleLinkModal}
                 />
-                <div className="self-end justify-self-end">
-                  <EditNoteButtons
-                    toggleMode={toggleMode}
-                    onToggleLinkModal={handleToggleLinkModal}
-                  />
-                </div>
               </div>
             </div>
           </>
         ) : (
           <>
+            {note.title && (
+              <div className="text-lg font-semibold mb-2">{note.title}</div>
+            )}
             <NoteBody content={note.content} />
             {isHovered && (
               <div className="absolute bottom-2 right-2 ">
