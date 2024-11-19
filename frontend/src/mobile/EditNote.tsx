@@ -36,6 +36,7 @@ export function EditNote({
   const updateNote = useMutation(api.notes.update);
   const deleteNote = useMutation(api.notes.deleteNote);
   const createChild = useMutation(api.notes.createChild);
+  const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
   const [metadata, setMetadata] = useState(note.metadata);
   const [modalState, setModalState] = useState<ModalState>("none");
@@ -50,6 +51,7 @@ export function EditNote({
   const handleSave = async () => {
     await updateNote({
       noteId: note._id,
+      title,
       content,
       metadata,
       parentId,
@@ -101,6 +103,13 @@ export function EditNote({
           parentNote={parentNote}
           onRemove={handleRemoveParent}
           onSearch={handleSearchParent}
+        />
+        <input
+          type="text"
+          className="w-full border-2 text-lg font-semibold"
+          placeholder="title..."
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
         />
         <textarea
           className="w-full h-full flex-1 border-2"
