@@ -3,7 +3,7 @@ import { Doc, Id } from "../../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import * as Icons from "react-icons/fa";
-import { ReadOnlyNote } from "@/components/Note";
+import { ViewNote } from "@/components/Note";
 
 export function NoteList({
   userId,
@@ -71,7 +71,7 @@ function NoteItem({
       className="p-4 border-b hover:bg-gray-50 active:bg-gray-100 relative"
     >
       <div onClick={() => onSelect(note._id)}>
-        <ReadOnlyNote noteId={note._id} />
+        <ViewNote showParent={true} note={note} />
       </div>
       <button
         onClick={handleReply}

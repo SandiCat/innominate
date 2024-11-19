@@ -431,7 +431,7 @@ function SearchModal({
   );
 }
 
-function ViewNote({
+export function ViewNote({
   showParent,
   note,
 }: {
