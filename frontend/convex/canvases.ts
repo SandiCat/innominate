@@ -1,6 +1,33 @@
 import { myQuery, myMutation } from "./wrapper";
 import { v } from "convex/values";
 import { vec2 } from "./types";
+import { QueryCtx } from "./_generated/server";
+import { Doc } from "./_generated/dataModel";
+
+async function canvasWithItems(ctx: QueryCtx, canvas: Doc<"canvases">) {
+  const canvasItems = await ctx.db
+    .query("canvasItems")
+    .withIndex("by_canvas", (q) => q.eq("canvasId", canvas._id))
+    .collect();
+
+  return {
+    id: canvas._id,
+    origin: canvas.origin,
+    items: canvasItems.map((item) => ({
+      id: item._id,
+      position: item.position,
+    })),
+  };
+}
+
+export const getCanvas = myQuery({
+  args: { canvasId: v.id("canvases") },
+  handler: async (ctx, { canvasId }) => {
+    const canvas = await ctx.db.get(canvasId);
+    if (!canvas) throw new Error("Canvas not found");
+    return await canvasWithItems(ctx, canvas);
+  },
+});
 
 export const getCanvasForUser = myQuery({
   args: { userId: v.id("users") },
@@ -12,19 +39,7 @@ export const getCanvasForUser = myQuery({
 
     if (!existingCanvas) return null;
 
-    const canvasItems = await ctx.db
-      .query("canvasItems")
-      .withIndex("by_canvas", (q) => q.eq("canvasId", existingCanvas._id))
-      .collect();
-
-    return {
-      id: existingCanvas._id,
-      origin: existingCanvas.origin,
-      items: canvasItems.map((item) => ({
-        id: item._id,
-        position: item.position,
-      })),
-    };
+    return await canvasWithItems(ctx, existingCanvas);
   },
 });
 

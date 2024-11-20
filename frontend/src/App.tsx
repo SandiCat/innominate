@@ -7,6 +7,7 @@ import { api } from "../convex/_generated/api";
 import { ReadOnlyNote } from "./components/Note";
 import { CanvasItem } from "./types";
 import { NoteTree } from "./components/NoteTree";
+import { MiniMap } from "./components/MiniMap";
 
 type ItemDragged =
   | { type: "canvas-item"; canvasItemId: Id<"canvasItems"> }
@@ -257,6 +258,7 @@ export function App({ userId }: { userId: Id<"users"> }) {
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-blue-50 relative">
+      <MiniMap canvasId={canvas.id} origin={canvasOrigin} />
       <div className="fixed top-4 right-4 w-80 z-10 flex flex-col">
         <SearchBar onSearch={handleSearch} />
         {searchQuery !== "" && (
