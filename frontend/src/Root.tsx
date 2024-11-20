@@ -16,7 +16,7 @@ import { Id } from "../convex/_generated/dataModel";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
-const title = import.meta.env.DEV ? "[DEV] Innominate" : "Innominate 2";
+const title = import.meta.env.DEV ? "[DEV] Innominate" : "Innominate";
 
 function WithUser() {
   const [userId, setUserId] = useState<Id<"users"> | undefined>();
