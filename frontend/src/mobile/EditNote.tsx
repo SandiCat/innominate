@@ -5,6 +5,8 @@ import { api } from "../../convex/_generated/api";
 import { Doc, Id } from "../../convex/_generated/dataModel";
 import { ReadOnlyNote } from "../components/Note";
 import { addLink } from "@/lib/note";
+import { SearchModal } from "@/components/SearchModal";
+import { match } from "ts-pattern";
 
 type ModalState = "none" | "parent" | "link";
 
@@ -98,7 +100,7 @@ export function EditNote({
 
   if (modalState === "none") {
     return (
-      <div className="flex flex-col h-[100dvh] p-8 gap-4">
+      <div className="flex flex-col flex-grow p-8 gap-4">
         <Parent
           parentNote={parentNote}
           onRemove={handleRemoveParent}
@@ -153,21 +155,18 @@ export function EditNote({
         </div>
       </div>
     );
-  } else if (modalState === "parent") {
+  } else {
     return (
-      <SearchModal
-        userId={note.userId}
-        onSelect={handleSetParent}
-        onClose={() => setModalState("none")}
-      />
-    );
-  } else if (modalState === "link") {
-    return (
-      <SearchModal
-        userId={note.userId}
-        onSelect={handleAddLink}
-        onClose={() => setModalState("none")}
-      />
+      <div className="flex-grow flex p-8">
+        <SearchModal
+          userId={note.userId}
+          onSelectNote={match(modalState)
+            .with("parent", () => handleSetParent)
+            .with("link", () => handleAddLink)
+            .exhaustive()}
+          onClose={() => setModalState("none")}
+        />
+      </div>
     );
   }
 }
@@ -212,50 +211,4 @@ function Parent({
       </div>
     );
   }
-}
-
-function SearchModal({
-  userId,
-  onSelect,
-  onClose,
-}: {
-  userId: Id<"users">;
-  onSelect: (noteId: Id<"notes">) => void;
-  onClose: () => void;
-}) {
-  const [query, setQuery] = useState("");
-  const notes = useQuery(api.notes.search, { userId, query });
-
-  return (
-    <div className="fixed inset-0 bg-white p-4 z-50">
-      <div className="flex flex-col h-full gap-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold">Select Parent</h2>
-          <Icons.FaTimes
-            className="text-2xl hover:cursor-pointer"
-            onClick={onClose}
-          />
-        </div>
-        <input
-          type="search"
-          className="border-2 p-2"
-          placeholder="Search notes..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          autoFocus
-        />
-        <div className="flex-1 overflow-auto">
-          {notes?.map((note) => (
-            <div
-              key={note._id}
-              className="p-4 border-b hover:bg-gray-100 cursor-pointer"
-              onClick={() => onSelect(note._id)}
-            >
-              {note.title || note.content || "(empty)"}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
 }

@@ -3,7 +3,6 @@ import { Doc, Id } from "../../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { match } from "ts-pattern";
-import { FiX } from "react-icons/fi";
 import { MdRemoveCircleOutline } from "react-icons/md";
 import {
   FaCheck,
@@ -18,6 +17,7 @@ import {
 } from "react-icons/fa";
 import { NoteBody } from "./note/NoteBody";
 import { addLink, shortDisplay } from "@/lib/note";
+import { SearchModal } from "./SearchModal";
 
 function EditContents({
   content,
@@ -375,58 +375,13 @@ export function Note({ noteId, canvasItemId, onDragStart, isRoot }: NoteProps) {
       {noteUI}
       {showingSearchModal && (
         <div className="absolute left-full pl-4 top-0 z-20">
-          <SearchModal
+          <CanvasSearchModal
             userId={note.userId}
             onSelectNote={handleModalSelectNote}
             onClose={handleCloseSearchModal}
           />
         </div>
       )}
-    </div>
-  );
-}
-
-function SearchModal({
-  userId,
-  onSelectNote,
-  onClose,
-}: {
-  userId: Id<"users">;
-  onSelectNote: (noteId: Id<"notes">) => void;
-  onClose: () => void;
-}) {
-  const [query, setQuery] = useState("");
-  const notes = useQuery(api.notes.search, { userId, query });
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && notes && notes.length > 0) {
-      onSelectNote(notes[0]._id);
-    }
-  };
-
-  return (
-    <div className="w-[300px] bg-gray-200 rounded-lg shadow-lg flex flex-col gap-4 p-2">
-      <div className="flex gap-2">
-        <input
-          type="text"
-          autoFocus
-          value={query}
-          onKeyDown={handleKeyDown}
-          onChange={(e) => setQuery(e.target.value)}
-          className="p-2 flex-1"
-        />
-        <ButtonIcon icon={<FiX />} onClick={async () => onClose()} />
-      </div>
-      {notes?.map((note) => (
-        <div
-          key={note._id}
-          className="p-2 hover:bg-gray-100 rounded-md cursor-pointer truncate"
-          onClick={() => onSelectNote(note._id)}
-          title={note.content}
-        >
-          {note.title || note.content}
-        </div>
-      ))}
     </div>
   );
 }
@@ -451,6 +406,26 @@ export function ViewNote({
       </div>
       {note.content && <NoteBody content={note.content} />}
     </>
+  );
+}
+
+function CanvasSearchModal({
+  userId,
+  onSelectNote,
+  onClose,
+}: {
+  userId: Id<"users">;
+  onSelectNote: (noteId: Id<"notes">) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="w-[300px] max-h-[300px] flex">
+      <SearchModal
+        userId={userId}
+        onSelectNote={onSelectNote}
+        onClose={onClose}
+      />
+    </div>
   );
 }
 
@@ -560,7 +535,7 @@ function ViewNoteButtons({
   );
 }
 
-function ButtonIcon({
+export function ButtonIcon({
   icon,
   onClick,
 }: {

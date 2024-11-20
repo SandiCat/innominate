@@ -25,20 +25,24 @@ export function App({ userId }: { userId: Id<"users"> }) {
     setState({ type: "list" });
   };
 
-  return match(state)
-    .with({ type: "list" }, () => (
-      <NoteList
-        userId={userId}
-        onSelect={handleSelectNote}
-        onCreate={handleCreateNote}
-      />
-    ))
-    .with({ type: "edit" }, ({ noteId }) => (
-      <WithNoteId
-        noteId={noteId}
-        onGoBack={handleGoBack}
-        onOpenNote={handleSelectNote}
-      />
-    ))
-    .exhaustive();
+  return (
+    <div className="flex h-[100dvh] w-[100dvw]">
+      {match(state)
+        .with({ type: "list" }, () => (
+          <NoteList
+            userId={userId}
+            onSelect={handleSelectNote}
+            onCreate={handleCreateNote}
+          />
+        ))
+        .with({ type: "edit" }, ({ noteId }) => (
+          <WithNoteId
+            noteId={noteId}
+            onGoBack={handleGoBack}
+            onOpenNote={handleSelectNote}
+          />
+        ))
+        .exhaustive()}
+    </div>
+  );
 }

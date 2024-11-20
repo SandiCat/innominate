@@ -20,7 +20,7 @@ export function NoteList({
   const notesOrEmpty = notes ?? [];
 
   return (
-    <div className="flex flex-col h-[100dvh]">
+    <div className="flex flex-col flex-grow">
       <div className="p-4 border-b">
         <input
           type="search"
