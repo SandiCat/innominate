@@ -393,18 +393,21 @@ export function ViewNote({
   showParent: boolean;
   note: Doc<"notes">;
 }) {
-  const hasContent = note.content || note.title;
-  if (!hasContent) return <div className="text-gray-400">Empty...</div>;
-
   return (
     <>
       <div className="flex flex-row gap-2">
         {showParent && note.parentId && <ParentSpan parentId={note.parentId} />}
         {note.title && (
-          <div className="text-lg font-semibold mb-2">{note.title}</div>
+          <div className="text-lg font-semibold mb-2 text-wrap">
+            {note.title}
+          </div>
         )}
       </div>
-      {note.content && <NoteBody content={note.content} />}
+      {note.content ? (
+        <NoteBody content={note.content} />
+      ) : (
+        !note.title && <div className="text-gray-400">Empty...</div>
+      )}
     </>
   );
 }
@@ -433,8 +436,8 @@ export function ReadOnlyNote({ noteId }: { noteId: Id<"notes"> }) {
   const note = useQuery(api.notes.get, { noteId });
   if (!note) return null;
   return (
-    <div className="w-full max-w-[350px] max-h-[120px] truncate bg-white rounded-lg shadow-lg cursor-grab relative select-none">
-      <div className="p-4">
+    <div className=" max-w-[350px] max-h-[120px] truncate bg-white rounded-lg shadow-lg cursor-grab relative select-none">
+      <div className=" p-4">
         <ViewNote showParent={true} note={note} />
       </div>
       <Backlinks noteId={noteId} />
