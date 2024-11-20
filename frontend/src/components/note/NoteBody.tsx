@@ -9,8 +9,6 @@ interface NoteBodyProps {
 }
 
 export function NoteBody({ content }: NoteBodyProps) {
-  if (!content) return <div className="text-gray-400">Empty...</div>;
-
   return (
     <div className="whitespace-pre-wrap">
       {parseNoteBody(content).map((token, i) =>

@@ -316,7 +316,7 @@ export function Note({ noteId, canvasItemId, onDragStart, isRoot }: NoteProps) {
 
   const noteUI = (
     <div
-      className="w-[350px] min-h-[120px] bg-white rounded-lg shadow-lg cursor-grab relative select-none flex flex-col"
+      className="w-[350px] bg-white rounded-lg shadow-lg cursor-grab relative select-none flex flex-col"
       onMouseDown={onDragStart}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -438,6 +438,9 @@ export function ViewNote({
   showParent: boolean;
   note: Doc<"notes">;
 }) {
+  const hasContent = note.content || note.title;
+  if (!hasContent) return <div className="text-gray-400">Empty...</div>;
+
   return (
     <>
       <div className="flex flex-row gap-2">
@@ -446,7 +449,7 @@ export function ViewNote({
           <div className="text-lg font-semibold mb-2">{note.title}</div>
         )}
       </div>
-      <NoteBody content={note.content} />
+      {note.content && <NoteBody content={note.content} />}
     </>
   );
 }
