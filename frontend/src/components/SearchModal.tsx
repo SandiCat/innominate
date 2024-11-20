@@ -1,6 +1,6 @@
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import * as Icons from "react-icons/fa";
 
@@ -15,11 +15,23 @@ export function SearchModal({
 }) {
   const [query, setQuery] = useState("");
   const notes = useQuery(api.notes.search, { userId, query });
-
+  const createNote = useMutation(api.notes.create);
+  const updateNote = useMutation(api.notes.update);
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && notes && notes.length > 0) {
       onSelectNote(notes[0]._id);
     }
+  };
+
+  const handleCreateNote = async () => {
+    const noteId = await createNote({ userId });
+    await updateNote({
+      noteId,
+      title: query,
+      content: "",
+      metadata: "",
+    });
+    onSelectNote(noteId);
   };
 
   return (
@@ -32,6 +44,10 @@ export function SearchModal({
           onKeyDown={handleKeyDown}
           onChange={(e) => setQuery(e.target.value)}
           className="p-2 flex-1"
+        />
+        <Icons.FaPlus
+          className="text-2xl text-gray-600"
+          onClick={handleCreateNote}
         />
         <Icons.FaTimes className="text-2xl text-gray-600" onClick={onClose} />
       </div>
