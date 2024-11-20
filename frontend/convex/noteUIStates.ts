@@ -4,7 +4,7 @@ import { QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 
 const DEFAULT_NOTE_UI_STATE = {
-  collapsed: false,
+  collapsed: true,
 };
 
 async function getByCompoundID(
