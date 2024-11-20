@@ -279,43 +279,26 @@ export function App({ userId }: { userId: Id<"users"> }) {
             transform: `translate(${canvasOrigin.x}px, ${canvasOrigin.y}px)`,
           }}
         >
-          {canvas.items.map((canvasItem) => {
-            if (
-              dragState.type === "dragging-item" &&
-              dragState.item.type === "canvas-item" &&
-              dragState.item.canvasItemId === canvasItem.id
-            ) {
-              return null;
-            }
-
-            return (
-              <CanvasItemComponent
-                key={canvasItem.id}
-                id={canvasItem.id}
-                position={canvasItem.position}
-                onDragStart={(e) => handleItemMouseDown(e, canvasItem)}
-              />
-            );
-          })}
+          {canvas.items.map((canvasItem) => (
+            <CanvasItemComponent
+              key={canvasItem.id}
+              id={canvasItem.id}
+              position={
+                dragState.type === "dragging-item" &&
+                dragState.item.type === "canvas-item" &&
+                dragState.item.canvasItemId === canvasItem.id
+                  ? dragState.position
+                  : canvasItem.position
+              }
+              onDragStart={(e) => handleItemMouseDown(e, canvasItem)}
+            />
+          ))}
           {dragState.type === "dragging-item" &&
-            match(dragState.item)
-              .with({ type: "canvas-item" }, ({ canvasItemId }) => (
-                <CanvasItemComponent
-                  id={canvasItemId}
-                  position={dragState.position}
-                  onDragStart={() => {
-                    throw new Error("Start drag on already dragging item");
-                  }}
-                />
-              ))
-              .with({ type: "search-item" }, ({ noteId }) => (
-                <div className="z-20">
-                  <Positioned position={dragState.position}>
-                    <ReadOnlyNote noteId={noteId} />
-                  </Positioned>
-                </div>
-              ))
-              .exhaustive()}
+            dragState.item.type === "search-item" && (
+              <Positioned position={dragState.position}>
+                <ReadOnlyNote noteId={dragState.item.noteId} />
+              </Positioned>
+            )}
         </div>
       </div>
     </div>
