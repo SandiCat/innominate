@@ -56,8 +56,7 @@ function NoteItem({
 }) {
   const createChild = useMutation(api.notes.createChild);
 
-  const handleReply = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleReply = async () => {
     const newNoteId = await createChild({
       parentId: note._id,
       userId: note.userId,

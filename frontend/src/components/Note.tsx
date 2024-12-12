@@ -30,7 +30,6 @@ function EditContents({
 }) {
   return (
     <textarea
-      onMouseDown={(e) => e.stopPropagation()}
       className="w-full resize-none outline-none overflow-hidden select-text border-b-2"
       value={content}
       onChange={(e) => onChange(e.target.value)}
@@ -105,7 +104,6 @@ function EditTitle({
   return (
     <input
       value={title}
-      onMouseDown={(e) => e.stopPropagation()}
       onChange={(e) => onChange(e.target.value)}
       placeholder="title..."
       className="w-full resize-none outline-none select-text text-lg font-semibold"
@@ -123,7 +121,6 @@ function EditMetadata({
   return (
     <input
       value={metadata}
-      onMouseDown={(e) => e.stopPropagation()}
       onChange={(e) => onChange(e.target.value)}
       placeholder="metadata..."
       className="w-full resize-none outline-none select-text"
@@ -317,7 +314,6 @@ export function Note({ noteId, canvasItemId, onDragStart, isRoot }: NoteProps) {
   const noteUI = (
     <div
       className="w-[350px] bg-white rounded-lg shadow-lg cursor-grab relative select-none flex flex-col"
-      onMouseDown={onDragStart}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -351,7 +347,11 @@ export function Note({ noteId, canvasItemId, onDragStart, isRoot }: NoteProps) {
           </>
         ) : (
           <>
-            <ViewNote showParent={isRoot} note={note} />
+            <ViewNote
+              showParent={isRoot}
+              note={note}
+              onDragStart={onDragStart}
+            />
             {isHovered && (
               <div className="absolute bottom-2 right-2 ">
                 <ViewNoteButtons
@@ -389,13 +389,15 @@ export function Note({ noteId, canvasItemId, onDragStart, isRoot }: NoteProps) {
 export function ViewNote({
   showParent,
   note,
+  onDragStart,
 }: {
   showParent: boolean;
   note: Doc<"notes">;
+  onDragStart?: (e: React.MouseEvent) => void;
 }) {
   return (
     <>
-      <div className="flex flex-row gap-2">
+      <div className="flex flex-row gap-2" onMouseDown={onDragStart}>
         {showParent && note.parentId && <ParentSpan parentId={note.parentId} />}
         {note.title && (
           <div className="text-lg font-semibold mb-2 text-wrap">
@@ -546,15 +548,7 @@ export function ButtonIcon({
   onClick: (e: React.MouseEvent) => Promise<void>;
 }) {
   return (
-    <div
-      className="p-1 rounded hover:bg-gray-100"
-      onMouseDown={(e) => e.stopPropagation()}
-      onDoubleClick={(e) => e.stopPropagation()}
-      onClick={async (e) => {
-        e.stopPropagation();
-        await onClick(e);
-      }}
-    >
+    <div className="p-1 rounded hover:bg-gray-100" onClick={onClick}>
       {icon}
     </div>
   );

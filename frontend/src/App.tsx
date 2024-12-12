@@ -8,6 +8,7 @@ import { ReadOnlyNote } from "./components/Note";
 import { CanvasItem } from "./types";
 import { NoteTree } from "./components/NoteTree";
 import { MiniMap } from "./components/MiniMap";
+import { isDirectClick } from "./lib/utils";
 
 type ItemDragged =
   | { type: "canvas-item"; canvasItemId: Id<"canvasItems"> }
@@ -154,6 +155,8 @@ export function App({ userId }: { userId: Id<"users"> }) {
     dragState.type === "dragging-canvas" ? dragState.tempOrigin : canvas.origin;
 
   const handleCanvasMouseDown = (e: MouseEvent) => {
+    if (!isDirectClick(e)) return;
+
     setDragState({
       type: "dragging-canvas",
       startMousePos: Vec2.fromMouseEvent(e),
@@ -163,7 +166,6 @@ export function App({ userId }: { userId: Id<"users"> }) {
   };
 
   const handleItemMouseDown = async (e: MouseEvent, canvasItem: CanvasItem) => {
-    e.stopPropagation();
     if (dragState.type !== "idle") throw new Error("Must be in idle state");
 
     const mousePos = Vec2.fromMouseEvent(e);
@@ -206,7 +208,7 @@ export function App({ userId }: { userId: Id<"users"> }) {
       .exhaustive();
   };
 
-  const handleMouseUp = async () => {
+  const handleMouseUp = async (e: MouseEvent) => {
     if (dragState.type === "dragging-item") {
       await match(dragState.item)
         .with({ type: "canvas-item" }, async (item) => {
@@ -224,6 +226,9 @@ export function App({ userId }: { userId: Id<"users"> }) {
         })
         .exhaustive();
     } else if (dragState.type === "dragging-canvas") {
+      if (!isDirectClick(e))
+        throw new Error("Canvas drag not finished on canvas");
+
       await setCanvasOrigin({
         canvasId: canvas.id,
         origin: dragState.tempOrigin,
@@ -234,6 +239,8 @@ export function App({ userId }: { userId: Id<"users"> }) {
   };
 
   const handleDoubleClick = async (e: MouseEvent) => {
+    if (!isDirectClick(e)) return;
+
     const mousePos = Vec2.fromMouseEvent(e);
     const canvasPos = screenToCanvas(mousePos, canvasOrigin);
 
