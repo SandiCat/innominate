@@ -396,8 +396,8 @@ export function ViewNote({
   onDragStart?: (e: React.MouseEvent) => void;
 }) {
   return (
-    <>
-      <div className="flex flex-row gap-2" onMouseDown={onDragStart}>
+    <div className="flex flex-col" onMouseDown={onDragStart}>
+      <div className="flex flex-row gap-2">
         {showParent && note.parentId && <ParentSpan parentId={note.parentId} />}
         {note.title && (
           <div className="text-lg font-semibold mb-2 text-wrap">
@@ -410,7 +410,7 @@ export function ViewNote({
       ) : (
         !note.title && <div className="text-gray-400">Empty...</div>
       )}
-    </>
+    </div>
   );
 }
 
