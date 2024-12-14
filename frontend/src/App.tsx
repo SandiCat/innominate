@@ -156,10 +156,10 @@ export function App({ userId }: { userId: Id<"users"> }) {
     return <div className="p-4">Creating canvas...</div>;
   }
 
-  const canvasOrigin = match(dragState)
-    .with({ type: "dragging-canvas" }, (state) => state.tempOrigin)
-    .with({ type: "idle" }, () => originCache ?? canvas.origin)
-    .otherwise(() => canvas.origin);
+  const canvasOrigin =
+    dragState.type === "dragging-canvas"
+      ? dragState.tempOrigin
+      : originCache ?? canvas.origin;
 
   const canvasItemPos = (canvasItem: CanvasItem): Vec2.Vec2 => {
     if (
