@@ -9,6 +9,7 @@ import { CanvasItem } from "./types";
 import { NoteTree } from "./components/NoteTree";
 import { MiniMap } from "./components/MiniMap";
 import { isDirectClick } from "./lib/utils";
+import { Map } from "immutable";
 
 type ItemDragged =
   | { type: "canvas-item"; canvasItemId: Id<"canvasItems"> }
@@ -118,6 +119,8 @@ const SEARCH_DRAG_OFFSET: Vec2.Vec2 = { x: -50, y: 0 };
 
 export function App({ userId }: { userId: Id<"users"> }) {
   const [dragState, setDragState] = useState<DragState>({ type: "idle" });
+  const [posCache, setPosCache] =
+    useState<Map<Id<"canvasItems">, Vec2.Vec2>>(Map());
   const [searchQuery, setSearchQuery] = useState("");
   const searchResults = useQuery(api.notes.search, {
     query: searchQuery,
@@ -132,6 +135,8 @@ export function App({ userId }: { userId: Id<"users"> }) {
   const canvas = useQuery(api.canvases.getCanvasForUser, {
     userId,
   });
+
+  const [originCache, setOriginCache] = useState<Vec2.Vec2 | null>(null);
 
   // create the canvas if it does not exist
   useEffect(() => {
@@ -151,8 +156,25 @@ export function App({ userId }: { userId: Id<"users"> }) {
     return <div className="p-4">Creating canvas...</div>;
   }
 
-  const canvasOrigin =
-    dragState.type === "dragging-canvas" ? dragState.tempOrigin : canvas.origin;
+  const canvasOrigin = match(dragState)
+    .with({ type: "dragging-canvas" }, (state) => state.tempOrigin)
+    .with({ type: "idle" }, () => originCache ?? canvas.origin)
+    .otherwise(() => canvas.origin);
+
+  const canvasItemPos = (canvasItem: CanvasItem): Vec2.Vec2 => {
+    if (
+      dragState.type === "dragging-item" &&
+      dragState.item.type === "canvas-item" &&
+      dragState.item.canvasItemId === canvasItem.id
+    ) {
+      return dragState.position;
+    }
+
+    const cachedPos = posCache.get(canvasItem.id);
+    if (cachedPos) return cachedPos;
+
+    return canvasItem.position;
+  };
 
   const handleCanvasMouseDown = (e: MouseEvent) => {
     if (!isDirectClick(e)) return;
@@ -212,9 +234,13 @@ export function App({ userId }: { userId: Id<"users"> }) {
     if (dragState.type === "dragging-item") {
       await match(dragState.item)
         .with({ type: "canvas-item" }, async (item) => {
-          await setPosition({
+          setPosCache(posCache.set(item.canvasItemId, dragState.position));
+
+          setPosition({
             id: item.canvasItemId,
             position: dragState.position,
+          }).then(() => {
+            setPosCache(posCache.delete(item.canvasItemId));
           });
         })
         .with({ type: "search-item" }, async (item) => {
@@ -229,9 +255,12 @@ export function App({ userId }: { userId: Id<"users"> }) {
       if (!isDirectClick(e))
         throw new Error("Canvas drag not finished on canvas");
 
-      await setCanvasOrigin({
+      setOriginCache(dragState.tempOrigin);
+      setCanvasOrigin({
         canvasId: canvas.id,
         origin: dragState.tempOrigin,
+      }).then(() => {
+        setOriginCache(null);
       });
     }
 
@@ -292,13 +321,7 @@ export function App({ userId }: { userId: Id<"users"> }) {
             <CanvasItemComponent
               key={canvasItem.id}
               id={canvasItem.id}
-              position={
-                dragState.type === "dragging-item" &&
-                dragState.item.type === "canvas-item" &&
-                dragState.item.canvasItemId === canvasItem.id
-                  ? dragState.position
-                  : canvasItem.position
-              }
+              position={canvasItemPos(canvasItem)}
               onDragStart={(e) => handleItemMouseDown(e, canvasItem)}
             />
           ))}
