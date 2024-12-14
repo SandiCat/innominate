@@ -18,6 +18,7 @@ import {
 import { NoteBody } from "./note/NoteBody";
 import { addLink, shortDisplay } from "@/lib/note";
 import { SearchModal } from "./SearchModal";
+import { isDirectClick } from "@/lib/utils";
 
 function EditContents({
   content,
@@ -317,7 +318,14 @@ export function Note({ noteId, canvasItemId, onDragStart, isRoot }: NoteProps) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="p-4 flex-1 flex flex-col gap-2">
+      <div
+        className="p-4 flex-1 flex flex-col gap-2"
+        onMouseDown={(e) => {
+          if (isDirectClick(e)) {
+            onDragStart?.(e);
+          }
+        }}
+      >
         {state.mode === "editing" ? (
           <>
             <EditParent
