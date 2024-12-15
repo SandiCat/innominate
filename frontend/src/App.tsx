@@ -8,7 +8,7 @@ import { ReadOnlyNote } from "./components/Note";
 import { CanvasItem } from "./types";
 import { NoteTree } from "./components/NoteTree";
 import { MiniMap } from "./components/MiniMap";
-import { isDirectClick } from "./lib/utils";
+import { isDirectClick, useWindowDimensions } from "./lib/utils";
 import { Map } from "immutable";
 
 type ItemDragged =
@@ -121,11 +121,13 @@ export function App({ userId }: { userId: Id<"users"> }) {
   const [dragState, setDragState] = useState<DragState>({ type: "idle" });
   const [posCache, setPosCache] =
     useState<Map<Id<"canvasItems">, Vec2.Vec2>>(Map());
+  const [zoom, setZoom] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const searchResults = useQuery(api.notes.search, {
     query: searchQuery,
     userId,
   });
+  const { width, height } = useWindowDimensions();
 
   const createNoteOnCanvas = useMutation(api.canvasItems.createNoteOnCanvas);
   const addNoteToCanvas = useMutation(api.canvasItems.addNoteToCanvas);
@@ -160,6 +162,13 @@ export function App({ userId }: { userId: Id<"users"> }) {
     dragState.type === "dragging-canvas"
       ? dragState.tempOrigin
       : originCache ?? canvas.origin;
+
+  const zoomScale = `scale(${zoom})`;
+  const originTranslate = `translate(${canvasOrigin.x}px, ${canvasOrigin.y}px)`;
+  const cameraTransform = `${originTranslate} ${zoomScale}`;
+  const screenVector = { x: width / 2, y: height / 2 };
+  const zoomCenter = Vec2.subtract(screenVector, canvasOrigin);
+  const transformOrigin = `${zoomCenter.x}px ${zoomCenter.y}px`;
 
   const canvasItemPos = (canvasItem: CanvasItem): Vec2.Vec2 => {
     if (
@@ -210,7 +219,11 @@ export function App({ userId }: { userId: Id<"users"> }) {
     match(dragState)
       .with({ type: "idle" }, () => {})
       .with({ type: "dragging-canvas" }, (state) => {
-        const delta = Vec2.subtract(mousePos, state.startMousePos);
+        const delta = Vec2.scale(
+          Vec2.subtract(mousePos, state.startMousePos),
+          1 / zoom
+        );
+
         const newOrigin = Vec2.add(state.startOrigin, delta);
         setDragState({
           ...state,
@@ -292,8 +305,22 @@ export function App({ userId }: { userId: Id<"users"> }) {
     });
   };
 
+  const handleZoom = (e: React.WheelEvent<HTMLDivElement>) => {
+    e.preventDefault();
+
+    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+    setZoom(zoom * zoomFactor);
+  };
+
   return (
-    <div className="w-screen h-screen overflow-hidden bg-blue-50 relative">
+    <div
+      className="w-screen h-screen overflow-hidden bg-blue-50 relative"
+      onWheel={handleZoom}
+    >
+      {/* <div
+        className="bg-red-400 w-5 h-5 absolute z-50"
+        style={{ top: screenVector.y, left: screenVector.x }}
+      ></div> */}
       <MiniMap canvasId={canvas.id} origin={canvasOrigin} />
       <div className="fixed top-4 right-4 w-80 z-10 flex flex-col">
         <SearchBar onSearch={handleSearch} />
@@ -314,7 +341,8 @@ export function App({ userId }: { userId: Id<"users"> }) {
       >
         <div
           style={{
-            transform: `translate(${canvasOrigin.x}px, ${canvasOrigin.y}px)`,
+            transform: cameraTransform,
+            transformOrigin: transformOrigin,
           }}
         >
           {canvas.items.map((canvasItem) => (
