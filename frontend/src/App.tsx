@@ -72,12 +72,24 @@ function CanvasItemComponent({ id, position, onDragStart }: CanvasItemProps) {
   );
 }
 
-function screenToCanvas(screenPos: Vec2.Vec2, origin: Vec2.Vec2): Vec2.Vec2 {
-  return Vec2.subtract(screenPos, origin);
+function screenToCanvas(
+  screenPos: Vec2.Vec2,
+  origin: Vec2.Vec2,
+  zoom: number,
+  zoomCenter: Vec2.Vec2
+): Vec2.Vec2 {
+  const K = Vec2.add(origin, Vec2.scale(zoomCenter, 1 - zoom));
+  return Vec2.scale(Vec2.subtract(screenPos, K), 1 / zoom);
 }
 
-function canvasToScreen(canvasPos: Vec2.Vec2, origin: Vec2.Vec2): Vec2.Vec2 {
-  return Vec2.add(canvasPos, origin);
+function canvasToScreen(
+  canvasPos: Vec2.Vec2,
+  origin: Vec2.Vec2,
+  zoom: number,
+  zoomCenter: Vec2.Vec2
+): Vec2.Vec2 {
+  const K = Vec2.add(origin, Vec2.scale(zoomCenter, 1 - zoom));
+  return Vec2.add(Vec2.scale(canvasPos, zoom), K);
 }
 
 function SearchBar({ onSearch }: { onSearch: (query: string) => void }) {
@@ -201,7 +213,7 @@ export function App({ userId }: { userId: Id<"users"> }) {
 
     const mousePos = Vec2.fromMouseEvent(e);
     const offset = Vec2.subtract(
-      canvasToScreen(canvasItem.position, canvasOrigin),
+      canvasToScreen(canvasItem.position, canvasOrigin, zoom, zoomCenter),
       mousePos
     );
 
@@ -233,7 +245,9 @@ export function App({ userId }: { userId: Id<"users"> }) {
       .with({ type: "dragging-item" }, (state) => {
         const newPosition = screenToCanvas(
           Vec2.add(mousePos, state.offset),
-          canvasOrigin
+          canvasOrigin,
+          zoom,
+          zoomCenter
         );
         setDragState({
           ...state,
@@ -284,7 +298,7 @@ export function App({ userId }: { userId: Id<"users"> }) {
     if (!isDirectClick(e)) return;
 
     const mousePos = Vec2.fromMouseEvent(e);
-    const canvasPos = screenToCanvas(mousePos, canvasOrigin);
+    const canvasPos = screenToCanvas(mousePos, canvasOrigin, zoom, zoomCenter);
 
     await createNoteOnCanvas({ canvasId: canvas.id, position: canvasPos });
   };
@@ -295,7 +309,7 @@ export function App({ userId }: { userId: Id<"users"> }) {
 
   const handleDrawerDragStart = (e: MouseEvent, noteId: Id<"notes">) => {
     const mousePos = Vec2.fromMouseEvent(e);
-    const canvasPos = screenToCanvas(mousePos, canvasOrigin);
+    const canvasPos = screenToCanvas(mousePos, canvasOrigin, zoom, zoomCenter);
 
     setDragState({
       type: "dragging-item",
