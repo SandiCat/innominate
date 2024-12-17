@@ -364,6 +364,7 @@ export function Note({ noteId, canvasItemId, onDragStart, isRoot }: NoteProps) {
               <div className="absolute bottom-2 right-2 ">
                 <ViewNoteButtons
                   noteId={noteId}
+                  isRootNote={isRoot}
                   parentId={note.parentId}
                   userId={note.userId}
                   canvasItemId={canvasItemId}
@@ -472,12 +473,14 @@ function EditNoteButtons({
 
 function ViewNoteButtons({
   noteId,
+  isRootNote,
   parentId,
   canvasItemId,
   userId,
   toggleMode,
 }: {
   noteId: Id<"notes">;
+  isRootNote: boolean;
   parentId: Id<"notes"> | undefined;
   canvasItemId: Id<"canvasItems">;
   userId: Id<"users">;
@@ -540,7 +543,7 @@ function ViewNoteButtons({
         onClick={handleDelete}
       />
       <ButtonIcon icon={<FaReply />} onClick={handleCreateChild} />
-      {parentId && (
+      {!isRootNote && (
         <ButtonIcon icon={<FaLevelUpAlt />} onClick={handleCreateSibling} />
       )}
       <ButtonIcon icon={<FaEdit />} onClick={handleToggleMode} />

@@ -23,5 +23,5 @@ export function buildSearchText(
 }
 
 export function shortDisplay(note: Doc<"notes">) {
-  return note.title || note.humanReadableId;
+  return note.title || `@${note.humanReadableId}`;
 }

@@ -33,7 +33,7 @@ function MentionSpan({ noteId }: { noteId: Id<"notes"> }) {
         className="bg-blue-100 px-1 rounded cursor-help"
         title={note === undefined ? "Loading..." : note.content}
       >
-        @{note === undefined ? "Loading..." : shortDisplay(note)}
+        {note === undefined ? "Loading..." : shortDisplay(note)}
       </span>
     );
   }
