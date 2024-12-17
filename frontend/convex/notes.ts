@@ -141,22 +141,25 @@ export const search = myQuery({
     query: v.string(),
   },
   handler: async (ctx, { query }) => {
-    const clerkId = ctx.identity.subject;
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
-      .unique();
-
-    if (!user) throw new Error("User not found");
-
     const trimmedQuery = query.trim();
     if (!trimmedQuery) return [];
     return await ctx.db
       .query("notes")
       .withSearchIndex("search_searchText", (q) =>
-        q.search("searchText", trimmedQuery).eq("userId", user._id)
+        q.search("searchText", trimmedQuery).eq("userId", ctx.user._id)
       )
       .take(10);
+  },
+});
+
+export const recent = myQuery({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("notes")
+      .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
+      .order("desc")
+      .take(20);
   },
 });
 

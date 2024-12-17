@@ -278,17 +278,16 @@ export function App({ userId }: { userId: Id<"users"> }) {
   };
 
   const handleZoom = (e: React.WheelEvent<HTMLDivElement>) => {
-    e.preventDefault();
+    // e.preventDefault();
+
+    console.log(e.target, e.currentTarget);
 
     const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
     setZoom(zoom * zoomFactor);
   };
 
   return (
-    <div
-      className="w-screen h-screen overflow-hidden bg-blue-50 relative"
-      onWheel={handleZoom}
-    >
+    <div className="w-screen h-screen overflow-hidden bg-blue-50 relative">
       {/* <div
         className="bg-red-400 w-5 h-5 absolute z-50"
         style={{ top: screenVector.y, left: screenVector.x }}
@@ -302,6 +301,7 @@ export function App({ userId }: { userId: Id<"users"> }) {
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onDoubleClick={handleDoubleClick}
+        onWheel={handleZoom}
       >
         <div
           style={{
