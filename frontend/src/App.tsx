@@ -8,6 +8,7 @@ import { ReadOnlyNote } from "./components/Note";
 import { CanvasItem } from "./types";
 import { NoteTree } from "./components/NoteTree";
 import { MiniMap } from "./components/MiniMap";
+import { Sidebar } from "./components/sidebar/Sidebar";
 import { isDirectClick, useWindowDimensions } from "./lib/utils";
 import { Map } from "immutable";
 
@@ -92,41 +93,6 @@ function canvasToScreen(
   return Vec2.add(Vec2.scale(canvasPos, zoom), K);
 }
 
-function SearchBar({ onSearch }: { onSearch: (query: string) => void }) {
-  return (
-    <input
-      type="search"
-      placeholder="Search notes..."
-      className="w-full px-4 py-2 rounded-lg border shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
-      onChange={(e) => onSearch(e.target.value)}
-    />
-  );
-}
-
-interface NoteSearchResult {
-  _id: Id<"notes">;
-}
-
-function SearchDrawer({
-  searchResults,
-  onDragStart,
-}: {
-  searchResults: NoteSearchResult[] | undefined;
-  onDragStart: (e: MouseEvent, noteId: Id<"notes">) => void;
-}) {
-  return (
-    <div className="mt-2 bg-white/35 backdrop-blur-sm rounded-lg shadow-lg p-4 overflow-y-auto">
-      <div className="space-y-4">
-        {searchResults?.map((note) => (
-          <div key={note._id} onMouseDown={(e) => onDragStart(e, note._id)}>
-            <ReadOnlyNote noteId={note._id} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 const SEARCH_DRAG_OFFSET: Vec2.Vec2 = { x: -50, y: 0 };
 
 export function App({ userId }: { userId: Id<"users"> }) {
@@ -134,11 +100,7 @@ export function App({ userId }: { userId: Id<"users"> }) {
   const [posCache, setPosCache] =
     useState<Map<Id<"canvasItems">, Vec2.Vec2>>(Map());
   const [zoom, setZoom] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
-  const searchResults = useQuery(api.notes.search, {
-    query: searchQuery,
-    userId,
-  });
+
   const { width, height } = useWindowDimensions();
 
   const createNoteOnCanvas = useMutation(api.canvasItems.createNoteOnCanvas);
@@ -303,10 +265,6 @@ export function App({ userId }: { userId: Id<"users"> }) {
     await createNoteOnCanvas({ canvasId: canvas.id, position: canvasPos });
   };
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-  };
-
   const handleDrawerDragStart = (e: MouseEvent, noteId: Id<"notes">) => {
     const mousePos = Vec2.fromMouseEvent(e);
     const canvasPos = screenToCanvas(mousePos, canvasOrigin, zoom, zoomCenter);
@@ -335,16 +293,8 @@ export function App({ userId }: { userId: Id<"users"> }) {
         className="bg-red-400 w-5 h-5 absolute z-50"
         style={{ top: screenVector.y, left: screenVector.x }}
       ></div> */}
-      <MiniMap canvasId={canvas.id} origin={canvasOrigin} />
-      <div className="fixed top-4 right-4 w-80 z-10 flex flex-col">
-        <SearchBar onSearch={handleSearch} />
-        {searchQuery !== "" && (
-          <SearchDrawer
-            searchResults={searchResults}
-            onDragStart={handleDrawerDragStart}
-          />
-        )}
-      </div>
+      {/* <MiniMap canvasId={canvas.id} origin={canvasOrigin} /> */}
+      <Sidebar onDragStart={handleDrawerDragStart} />
       <div
         className="w-screen h-screen overflow-hidden"
         onMouseDown={handleCanvasMouseDown}
