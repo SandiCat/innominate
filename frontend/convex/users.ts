@@ -1,9 +1,13 @@
-import { myMutation } from "./wrapper";
+import { mutation } from "./_generated/server";
 
-export const upsertUser = myMutation({
+export const upsertUser = mutation({
   args: {},
   handler: async (ctx) => {
-    const identity = ctx.identity;
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Unauthorized");
+    }
 
     const user = await ctx.db
       .query("users")
