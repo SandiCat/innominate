@@ -36,13 +36,14 @@ function Drawer({
   notes,
   onDragStart,
 }: {
-  notes: NoteSearchResult[] | undefined;
+  notes: NoteSearchResult[] | undefined | null;
   onDragStart: (e: React.MouseEvent, noteId: Id<"notes">) => void;
 }) {
   return (
     <div className="mt-2 bg-white/35 backdrop-blur-sm rounded-lg shadow-lg overflow-y-auto">
       {match(notes)
         .with(undefined, () => null)
+        .with(null, () => null)
         .with([], () => (
           <div className="flex items-center justify-center h-24 text-gray-500 italic text-sm">
             Empty...
@@ -72,7 +73,9 @@ function SearchResults({
     query,
   });
 
-  return <Drawer notes={searchResults} onDragStart={onDragStart} />;
+  const notes = query === "" ? null : searchResults;
+
+  return <Drawer notes={notes} onDragStart={onDragStart} />;
 }
 
 function RecentNotes({
