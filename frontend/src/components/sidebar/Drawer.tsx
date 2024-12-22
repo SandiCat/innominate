@@ -1,9 +1,8 @@
-import { useState } from "react";
 import { Id } from "../../../convex/_generated/dataModel";
 import { ReadOnlyNote } from "../Note";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { Tabs, Tab } from "./Tabs";
+import { UncollapsedTab } from "./Tabs";
 import { match } from "ts-pattern";
 
 interface NoteSearchResult {
@@ -40,24 +39,26 @@ function Drawer({
   onDragStart: (e: React.MouseEvent, noteId: Id<"notes">) => void;
 }) {
   return (
-    <div className="mt-2 bg-white/35 backdrop-blur-sm rounded-lg shadow-lg overflow-y-auto">
-      {match(notes)
-        .with(undefined, () => null)
-        .with(null, () => null)
-        .with([], () => (
-          <div className="flex items-center justify-center h-24 text-gray-500 italic text-sm">
-            Empty...
-          </div>
-        ))
-        .otherwise((notes) => {
-          const [leftColumn, rightColumn] = splitIntoTwoColumns(notes);
-          return (
-            <div className="flex flex-row gap-2 p-2">
-              <Column notes={leftColumn} onDragStart={onDragStart} />
-              <Column notes={rightColumn} onDragStart={onDragStart} />
+    <div className="w-80  flex flex-col overflow-y-auto pointer-events-auto bg-white/35 backdrop-blur-sm rounded-lg shadow-lg">
+      <div className="flex-1 min-h-0">
+        {match(notes)
+          .with(undefined, () => null)
+          .with(null, () => null)
+          .with([], () => (
+            <div className="flex items-center justify-center h-24 text-gray-500 italic text-sm">
+              Empty...
             </div>
-          );
-        })}
+          ))
+          .otherwise((notes) => {
+            const [leftColumn, rightColumn] = splitIntoTwoColumns(notes);
+            return (
+              <div className="flex flex-1 flex-row gap-2 p-2">
+                <Column notes={leftColumn} onDragStart={onDragStart} />
+                <Column notes={rightColumn} onDragStart={onDragStart} />
+              </div>
+            );
+          })}
+      </div>
     </div>
   );
 }
@@ -98,26 +99,17 @@ function RecommendedNotes({
 
 interface SidebarProps {
   onDragStart: (e: React.MouseEvent, noteId: Id<"notes">) => void;
+  selectedTab: UncollapsedTab;
 }
 
-export function Sidebar({ onDragStart }: SidebarProps) {
-  const [selectedTab, setSelectedTab] = useState<Tab>({ type: "collapsed" });
-
-  return (
-    <div className="fixed top-4 right-4 w-80 z-10 flex flex-col">
-      <Tabs selectedTab={selectedTab} onTabChange={setSelectedTab} />
-      {match(selectedTab)
-        .with({ type: "search" }, (tab) => (
-          <SearchResults query={tab.query} onDragStart={onDragStart} />
-        ))
-        .with({ type: "recent" }, () => (
-          <RecentNotes onDragStart={onDragStart} />
-        ))
-        .with({ type: "recommended" }, () => (
-          <RecommendedNotes onDragStart={onDragStart} />
-        ))
-        .with({ type: "collapsed" }, () => null)
-        .exhaustive()}
-    </div>
-  );
+export function SidebarDrawer({ onDragStart, selectedTab }: SidebarProps) {
+  return match(selectedTab)
+    .with({ type: "search" }, (tab) => (
+      <SearchResults query={tab.query} onDragStart={onDragStart} />
+    ))
+    .with({ type: "recent" }, () => <RecentNotes onDragStart={onDragStart} />)
+    .with({ type: "recommended" }, () => (
+      <RecommendedNotes onDragStart={onDragStart} />
+    ))
+    .exhaustive();
 }

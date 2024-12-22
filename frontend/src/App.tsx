@@ -7,10 +7,9 @@ import { api } from "../convex/_generated/api";
 import { ReadOnlyNote } from "./components/Note";
 import { CanvasItem } from "./types";
 import { NoteTree } from "./components/NoteTree";
-import { MiniMap } from "./components/MiniMap";
-import { Sidebar } from "./components/sidebar/Sidebar";
 import { isDirectClick, useWindowDimensions } from "./lib/utils";
 import { Map } from "immutable";
+import { OverlayUI } from "./components/OverlayUI";
 
 type ItemDragged =
   | { type: "canvas-item"; canvasItemId: Id<"canvasItems"> }
@@ -287,44 +286,41 @@ export function App({ userId }: { userId: Id<"users"> }) {
   };
 
   return (
-    <div className="w-screen h-screen overflow-hidden bg-blue-50 relative">
-      {/* <div
-        className="bg-red-400 w-5 h-5 absolute z-50"
-        style={{ top: screenVector.y, left: screenVector.x }}
-      ></div> */}
-      {/* <MiniMap canvasId={canvas.id} origin={canvasOrigin} /> */}
-      <Sidebar onDragStart={handleDrawerDragStart} />
-      <div
-        className="w-screen h-screen overflow-hidden"
-        onMouseDown={handleCanvasMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onDoubleClick={handleDoubleClick}
-        onWheel={handleZoom}
-      >
+    <div>
+      <div className="w-screen h-screen bg-blue-50 overflow-hidden absolute">
         <div
-          style={{
-            transform: cameraTransform,
-            transformOrigin: transformOrigin,
-          }}
+          className="w-screen h-screen overflow-hidden"
+          onMouseDown={handleCanvasMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onDoubleClick={handleDoubleClick}
+          onWheel={handleZoom}
         >
-          {canvas.items.map((canvasItem) => (
-            <CanvasItemComponent
-              key={canvasItem.id}
-              id={canvasItem.id}
-              position={canvasItemPos(canvasItem)}
-              onDragStart={(e) => handleItemMouseDown(e, canvasItem)}
-            />
-          ))}
-          {dragState.type === "dragging-item" &&
-            dragState.item.type === "search-item" && (
-              <Positioned position={dragState.position}>
-                <ReadOnlyNote noteId={dragState.item.noteId} />
-              </Positioned>
-            )}
+          <div
+            style={{
+              transform: cameraTransform,
+              transformOrigin: transformOrigin,
+            }}
+          >
+            {canvas.items.map((canvasItem) => (
+              <CanvasItemComponent
+                key={canvasItem.id}
+                id={canvasItem.id}
+                position={canvasItemPos(canvasItem)}
+                onDragStart={(e) => handleItemMouseDown(e, canvasItem)}
+              />
+            ))}
+            {dragState.type === "dragging-item" &&
+              dragState.item.type === "search-item" && (
+                <Positioned position={dragState.position}>
+                  <ReadOnlyNote noteId={dragState.item.noteId} />
+                </Positioned>
+              )}
+          </div>
         </div>
       </div>
+      <OverlayUI onDragStart={handleDrawerDragStart} />
     </div>
   );
 }

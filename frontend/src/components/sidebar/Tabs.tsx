@@ -27,11 +27,12 @@ function IconButton({ icon, selected, onClick }: IconButtonProps) {
   );
 }
 
-export type Tab =
+export type UncollapsedTab =
   | { type: "search"; query: string }
   | { type: "recent" }
-  | { type: "recommended" }
-  | { type: "collapsed" };
+  | { type: "recommended" };
+
+export type Tab = UncollapsedTab | { type: "collapsed" };
 
 interface TabsProps {
   selectedTab: Tab;
@@ -40,7 +41,7 @@ interface TabsProps {
 
 export function Tabs({ selectedTab, onTabChange }: TabsProps) {
   return (
-    <div className="flex flex-row items-center gap-2">
+    <div className="flex flex-row items-center gap-2 pointer-events-auto">
       <IconButton
         icon={
           selectedTab.type === "collapsed" ? (
