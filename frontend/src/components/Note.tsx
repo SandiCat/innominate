@@ -141,7 +141,7 @@ function Backlinks({ noteId }: { noteId: Id<"notes"> }) {
         <span key={note._id}>
           {i > 0 && ", "}
           <span className="hover:underline cursor-help" title={note.content}>
-            @{shortDisplay(note)}
+            {shortDisplay(note)}
           </span>
         </span>
       ))}
