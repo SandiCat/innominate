@@ -26,7 +26,7 @@ export function OverlayUI({
       </div>
       <div className="flex-1 flex flex-row min-h-0 ">
         <div className="flex flex-1 justify-center items-center">
-          <div className="bg-blue-200 w-[500px] h-[500px] pointer-events-auto" />
+          {/* <div className="bg-blue-200 w-[500px] h-[500px] pointer-events-auto" /> */}
         </div>
         {selectedTab.type !== "collapsed" && (
           <SidebarDrawer onDragStart={onDragStart} selectedTab={selectedTab} />
