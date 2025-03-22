@@ -30,3 +30,25 @@ export const useWindowDimensions = () => {
 
   return dimensions;
 };
+export function mouseClickVsDrag(
+  e: React.MouseEvent,
+  onDragStart: () => void,
+  onClick: () => void
+) {
+  if (e.button !== 0) return; // only handle left clicks
+
+  const onMouseMove = () => {
+    onDragStart();
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+  };
+
+  const onMouseUp = () => {
+    onClick();
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+  };
+
+  document.addEventListener("mousemove", onMouseMove);
+  document.addEventListener("mouseup", onMouseUp);
+}

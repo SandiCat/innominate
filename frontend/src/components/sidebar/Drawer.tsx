@@ -4,13 +4,10 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { UncollapsedTab } from "./Tabs";
 import { match } from "ts-pattern";
+import { mouseClickVsDrag } from "@/lib/utils";
 
 interface NoteSearchResult {
   _id: Id<"notes">;
-}
-
-function splitIntoTwoColumns<T>(arr: T[]): [T[], T[]] {
-  return [arr.filter((_, i) => i % 2 === 0), arr.filter((_, i) => i % 2 === 1)];
 }
 
 function Note({
@@ -25,48 +22,14 @@ function Note({
   return (
     <div
       onMouseDown={(e) => {
-        if (e.button !== 0) return; // only handle left clicks
-
-        const onMouseMove = () => {
-          onDragStart(e, noteId);
-          document.removeEventListener("mousemove", onMouseMove);
-          document.removeEventListener("mouseup", onMouseUp);
-        };
-
-        const onMouseUp = () => {
-          onSelect(noteId);
-          document.removeEventListener("mousemove", onMouseMove);
-          document.removeEventListener("mouseup", onMouseUp);
-        };
-
-        document.addEventListener("mousemove", onMouseMove);
-        document.addEventListener("mouseup", onMouseUp);
+        mouseClickVsDrag(
+          e,
+          () => onDragStart(e, noteId),
+          () => onSelect(noteId)
+        );
       }}
     >
       <ReadOnlyNote noteId={noteId} />
-    </div>
-  );
-}
-
-function Column({
-  notes,
-  onDragStart,
-  onSelect,
-}: {
-  notes: NoteSearchResult[];
-  onDragStart: (e: React.MouseEvent, noteId: Id<"notes">) => void;
-  onSelect: (noteId: Id<"notes">) => void;
-}) {
-  return (
-    <div className="flex-1 flex flex-col gap-2">
-      {notes.map((note) => (
-        <Note
-          key={note._id}
-          noteId={note._id}
-          onDragStart={onDragStart}
-          onSelect={onSelect}
-        />
-      ))}
     </div>
   );
 }
@@ -92,19 +55,16 @@ function Drawer({
             </div>
           ))
           .otherwise((notes) => {
-            const [leftColumn, rightColumn] = splitIntoTwoColumns(notes);
             return (
-              <div className="flex flex-1 flex-row gap-2 p-2">
-                <Column
-                  notes={leftColumn}
-                  onDragStart={onDragStart}
-                  onSelect={onSelect}
-                />
-                <Column
-                  notes={rightColumn}
-                  onDragStart={onDragStart}
-                  onSelect={onSelect}
-                />
+              <div className="flex-1 flex flex-col gap-2 p-2">
+                {notes.map((note) => (
+                  <Note
+                    key={note._id}
+                    noteId={note._id}
+                    onDragStart={onDragStart}
+                    onSelect={onSelect}
+                  />
+                ))}
               </div>
             );
           })}
