@@ -38,7 +38,7 @@ export function OverlayUI({
       <div className="flex-1 flex flex-row min-h-0 ">
         <div className="flex flex-1 justify-center items-center">
           {editingNote && (
-            <div className="flex flex-col bg-blue-200 w-[500px] h-[500px] pointer-events-auto">
+            <div className="flex flex-col bg-white rounded-lg shadow-2xl w-[500px] h-[500px] pointer-events-auto">
               <WithNoteId
                 noteId={editingNote}
                 onGoBack={() => setEditingNote(null)}
