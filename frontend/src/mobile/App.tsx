@@ -1,4 +1,4 @@
-import { WithNoteId } from "./EditNote";
+import { WithNoteId } from "@/components/FullscreenEditor";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
@@ -13,7 +13,7 @@ export function App({ userId }: { userId: Id<"users"> }) {
   const createNote = useMutation(api.notes.create);
 
   const handleCreateNote = async () => {
-    const noteId = await createNote({ userId });
+    const noteId = await createNote();
     setState({ type: "edit", noteId });
   };
 

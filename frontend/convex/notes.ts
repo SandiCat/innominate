@@ -120,9 +120,9 @@ export const deleteNote = myMutation({
 });
 
 export const create = myMutation({
-  args: { userId: v.id("users") },
-  handler: async (ctx, { userId }) => {
-    return await createEmptyNote(ctx, userId);
+  args: {},
+  handler: async (ctx) => {
+    return await createEmptyNote(ctx, ctx.user._id);
   },
 });
 

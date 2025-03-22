@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import * as Icons from "react-icons/fa";
 import { ViewNote } from "@/components/Note";
+import { RoundedButton } from "@/components/RoundedButton";
 
 export function NoteList({
   userId,
@@ -37,12 +38,11 @@ export function NoteList({
         ))}
       </div>
 
-      <button
-        className="fixed bottom-6 right-6 w-14 h-14 bg-blue-500 rounded-full shadow-lg flex items-center justify-center text-white"
-        onClick={onCreate}
-      >
-        <Icons.FaEdit className="text-2xl" />
-      </button>
+      <div className="fixed bottom-6 right-6">
+        <RoundedButton onClick={onCreate}>
+          <Icons.FaEdit className="text-2xl" />
+        </RoundedButton>
+      </div>
     </div>
   );
 }

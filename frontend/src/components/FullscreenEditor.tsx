@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import * as Icons from "react-icons/fa";
 import { api } from "../../convex/_generated/api";
 import { Doc, Id } from "../../convex/_generated/dataModel";
-import { ReadOnlyNote } from "../components/Note";
+import { ReadOnlyNote } from "./Note";
 import { addLink } from "@/lib/note";
 import { SearchModal, ModalState } from "@/components/SearchModal";
 import { match } from "ts-pattern";
@@ -21,10 +21,16 @@ export function WithNoteId({
   if (note === undefined) return <div>Loading...</div>;
   else if (note === null) throw new Error("Note not found");
   else
-    return <EditNote note={note} onGoBack={onGoBack} onOpenNote={onOpenNote} />;
+    return (
+      <FullscreenEditor
+        note={note}
+        onGoBack={onGoBack}
+        onOpenNote={onOpenNote}
+      />
+    );
 }
 
-export function EditNote({
+export function FullscreenEditor({
   note,
   onGoBack,
   onOpenNote,

@@ -26,7 +26,7 @@ export function SearchModal({
   };
 
   const handleCreateNote = async () => {
-    const noteId = await createNote({ userId });
+    const noteId = await createNote();
     await updateNote({
       noteId,
       title: query,
