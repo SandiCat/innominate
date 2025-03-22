@@ -17,7 +17,7 @@ import {
 } from "react-icons/fa";
 import { NoteBody } from "./note/NoteBody";
 import { addLink, shortDisplay } from "@/lib/note";
-import { SearchModal } from "./SearchModal";
+import { SearchModal, ModalState } from "./SearchModal";
 import { isDirectClick } from "@/lib/utils";
 
 function EditContents({
@@ -164,13 +164,8 @@ type NoteState =
       draftTitle: string;
       draftContent: string;
       draftMetadata: string;
-      searchModalState: SearchModalState;
+      searchModalState: ModalState;
     };
-
-type SearchModalState =
-  | { mode: "closed" }
-  | { mode: "link"; insertPosition: number }
-  | { mode: "parent" };
 
 export function Note({ noteId, canvasItemId, onDragStart, isRoot }: NoteProps) {
   const [state, setState] = useState<NoteState>({ mode: "viewing" });
@@ -182,7 +177,7 @@ export function Note({ noteId, canvasItemId, onDragStart, isRoot }: NoteProps) {
   if (!note) return null;
 
   const showingSearchModal =
-    state.mode === "editing" && state.searchModalState.mode !== "closed";
+    state.mode === "editing" && state.searchModalState !== "none";
 
   const toggleMode = async () => {
     await match(state)
@@ -206,7 +201,7 @@ export function Note({ noteId, canvasItemId, onDragStart, isRoot }: NoteProps) {
           draftTitle: note.title,
           draftContent: note.content,
           draftMetadata: note.metadata,
-          searchModalState: { mode: "closed" },
+          searchModalState: "none",
         });
       })
       .exhaustive();
@@ -245,44 +240,37 @@ export function Note({ noteId, canvasItemId, onDragStart, isRoot }: NoteProps) {
       throw new Error("Missing text area when inserting a link");
     }
 
-    if (state.searchModalState.mode === "link") {
+    if (state.searchModalState === "link") {
       setState({
         ...state,
-        searchModalState: { mode: "closed" },
+        searchModalState: "none",
       });
     } else {
-      const insertPosition = textArea.current.selectionStart;
-
       setState({
         ...state,
-        searchModalState: {
-          mode: "link",
-          insertPosition,
-        },
+        searchModalState: "link",
       });
     }
   };
 
   const handleModalSelectNote = (noteId: Id<"notes">) => {
-    if (state.mode !== "editing" || state.searchModalState.mode === "closed") {
+    if (state.mode !== "editing" || state.searchModalState === "none") {
       throw new Error("Adding link in invalid state");
     }
 
-    if (state.searchModalState.mode === "link") {
-      const newContent = addLink(
-        state.draftContent,
-        noteId,
-        state.searchModalState.insertPosition
-      );
+    if (state.searchModalState === "link") {
+      const insertPosition = textArea.current?.selectionStart;
+
+      const newContent = addLink(state.draftContent, noteId, insertPosition);
       setState({
         ...state,
-        searchModalState: { mode: "closed" },
+        searchModalState: "none",
         draftContent: newContent,
       });
-    } else if (state.searchModalState.mode === "parent") {
+    } else if (state.searchModalState === "parent") {
       setState({
         ...state,
-        searchModalState: { mode: "closed" },
+        searchModalState: "none",
         draftParentId: noteId,
       });
     }
@@ -293,7 +281,7 @@ export function Note({ noteId, canvasItemId, onDragStart, isRoot }: NoteProps) {
       throw new Error("Cannot close search modal in non-editing mode");
     }
 
-    setState({ ...state, searchModalState: { mode: "closed" } });
+    setState({ ...state, searchModalState: "none" });
   };
 
   const handleSearchParent = () => {
@@ -301,7 +289,7 @@ export function Note({ noteId, canvasItemId, onDragStart, isRoot }: NoteProps) {
       throw new Error("Cannot search parent in non-editing mode");
     }
 
-    setState({ ...state, searchModalState: { mode: "parent" } });
+    setState({ ...state, searchModalState: "parent" });
   };
 
   const handleRemoveParent = () => {

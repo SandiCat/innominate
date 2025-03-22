@@ -4,6 +4,8 @@ import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import * as Icons from "react-icons/fa";
 
+export type ModalState = "none" | "parent" | "link";
+
 export function SearchModal({
   userId,
   onSelectNote,
@@ -14,7 +16,7 @@ export function SearchModal({
   onClose: () => void;
 }) {
   const [query, setQuery] = useState("");
-  const notes = useQuery(api.notes.search, { userId, query });
+  const notes = useQuery(api.notes.search, { query });
   const createNote = useMutation(api.notes.create);
   const updateNote = useMutation(api.notes.update);
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

@@ -5,10 +5,8 @@ import { api } from "../../convex/_generated/api";
 import { Doc, Id } from "../../convex/_generated/dataModel";
 import { ReadOnlyNote } from "../components/Note";
 import { addLink } from "@/lib/note";
-import { SearchModal } from "@/components/SearchModal";
+import { SearchModal, ModalState } from "@/components/SearchModal";
 import { match } from "ts-pattern";
-
-type ModalState = "none" | "parent" | "link";
 
 export function WithNoteId({
   noteId,
