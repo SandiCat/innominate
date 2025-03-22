@@ -59,7 +59,6 @@ function NoteItem({
   const handleReply = async () => {
     const newNoteId = await createChild({
       parentId: note._id,
-      userId: note.userId,
     });
     onSelect(newNoteId);
   };

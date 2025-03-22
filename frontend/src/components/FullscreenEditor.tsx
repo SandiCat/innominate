@@ -97,7 +97,6 @@ export function FullscreenEditor({
   const handleReply = async () => {
     const newNoteId = await createChild({
       parentId: note._id,
-      userId: note.userId,
     });
     onOpenNote(newNoteId);
   };

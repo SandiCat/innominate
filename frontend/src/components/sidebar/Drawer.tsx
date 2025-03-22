@@ -1,10 +1,13 @@
 import { Id } from "../../../convex/_generated/dataModel";
 import { ReadOnlyNote } from "../Note";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { UncollapsedTab } from "./Tabs";
 import { match } from "ts-pattern";
 import { mouseClickVsDrag } from "@/lib/utils";
+import { useState } from "react";
+import { FaEdit, FaReply, FaTrash, FaCheck } from "react-icons/fa";
+import { ButtonIcon, ButtonContainer } from "../note/Buttons";
 
 interface NoteSearchResult {
   _id: Id<"notes">;
@@ -19,17 +22,56 @@ function Note({
   onDragStart: (e: React.MouseEvent, noteId: Id<"notes">) => void;
   onSelect: (noteId: Id<"notes">) => void;
 }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const createChild = useMutation(api.notes.createChild);
+  const deleteNote = useMutation(api.notes.deleteNote);
+
+  const handleCreateChild = async () => {
+    const childId = await createChild({ parentId: noteId });
+    onSelect(childId);
+  };
+
+  const handleDelete = async () => {
+    if (confirmDelete) {
+      await deleteNote({ noteId });
+    } else {
+      setConfirmDelete(true);
+    }
+  };
+
   return (
     <div
-      onMouseDown={(e) => {
-        mouseClickVsDrag(
-          e,
-          () => onDragStart(e, noteId),
-          () => onSelect(noteId)
-        );
-      }}
+      className="relative"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      <ReadOnlyNote noteId={noteId} />
+      <div
+        onMouseDown={(e) => {
+          mouseClickVsDrag(
+            e,
+            () => onDragStart(e, noteId),
+            () => onSelect(noteId)
+          );
+        }}
+      >
+        <ReadOnlyNote noteId={noteId} />
+      </div>
+      {isHovered && (
+        <div className="absolute bottom-2 right-2">
+          <ButtonContainer>
+            <ButtonIcon icon={<FaReply />} onClick={handleCreateChild} />
+            <ButtonIcon
+              icon={<FaEdit />}
+              onClick={async () => onSelect(noteId)}
+            />
+            <ButtonIcon
+              icon={confirmDelete ? <FaCheck /> : <FaTrash />}
+              onClick={handleDelete}
+            />
+          </ButtonContainer>
+        </div>
+      )}
     </div>
   );
 }

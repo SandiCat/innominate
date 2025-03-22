@@ -19,6 +19,7 @@ import { NoteBody } from "./note/NoteBody";
 import { addLink, shortDisplay } from "@/lib/note";
 import { SearchModal, ModalState } from "./SearchModal";
 import { isDirectClick } from "@/lib/utils";
+import { ButtonIcon, ButtonContainer } from "./note/Buttons";
 
 function EditContents({
   content,
@@ -354,7 +355,6 @@ export function Note({ noteId, canvasItemId, onDragStart, isRoot }: NoteProps) {
                   noteId={noteId}
                   isRootNote={isRoot}
                   parentId={note.parentId}
-                  userId={note.userId}
                   canvasItemId={canvasItemId}
                   toggleMode={toggleMode}
                 />
@@ -445,10 +445,10 @@ function EditNoteButtons({
   onToggleLinkModal: () => void;
 }) {
   return (
-    <div className="flex gap-1 cursor-pointer">
+    <ButtonContainer>
       <ButtonIcon icon={<FaLink />} onClick={async () => onToggleLinkModal()} />
       <ButtonIcon icon={<FaCheck />} onClick={toggleMode} />
-    </div>
+    </ButtonContainer>
   );
 }
 
@@ -457,14 +457,12 @@ function ViewNoteButtons({
   isRootNote,
   parentId,
   canvasItemId,
-  userId,
   toggleMode,
 }: {
   noteId: Id<"notes">;
   isRootNote: boolean;
   parentId: Id<"notes"> | undefined;
   canvasItemId: Id<"canvasItems">;
-  userId: Id<"users">;
   toggleMode: () => Promise<void>;
 }) {
   const UIState = useQuery(api.noteUIStates.get, { noteId, canvasItemId });
@@ -477,12 +475,12 @@ function ViewNoteButtons({
   if (UIState === undefined) return null;
 
   const handleCreateChild = async () => {
-    await createChild({ parentId: noteId, userId });
+    await createChild({ parentId: noteId });
   };
 
   const handleCreateSibling = async () => {
     // TODO: can we make this type check?
-    await createChild({ parentId: parentId!, userId });
+    await createChild({ parentId: parentId! });
   };
 
   const handleToggleMode = async () => {
@@ -510,7 +508,7 @@ function ViewNoteButtons({
   };
 
   return (
-    <div className="flex gap-1 cursor-pointer">
+    <ButtonContainer>
       <ButtonIcon
         icon={UIState.collapsed ? <FaChevronRight /> : <FaChevronDown />}
         onClick={handleToggleCollapse}
@@ -528,20 +526,6 @@ function ViewNoteButtons({
         <ButtonIcon icon={<FaLevelUpAlt />} onClick={handleCreateSibling} />
       )}
       <ButtonIcon icon={<FaEdit />} onClick={handleToggleMode} />
-    </div>
-  );
-}
-
-export function ButtonIcon({
-  icon,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  onClick: (e: React.MouseEvent) => Promise<void>;
-}) {
-  return (
-    <div className="p-1 rounded hover:bg-gray-100" onClick={onClick}>
-      {icon}
-    </div>
+    </ButtonContainer>
   );
 }
