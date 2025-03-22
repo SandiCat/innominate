@@ -373,7 +373,6 @@ export function Note({ noteId, canvasItemId, onDragStart, isRoot }: NoteProps) {
       {showingSearchModal && (
         <div className="absolute left-full pl-4 top-0 z-20">
           <CanvasSearchModal
-            userId={note.userId}
             onSelectNote={handleModalSelectNote}
             onClose={handleCloseSearchModal}
           />
@@ -412,21 +411,15 @@ export function ViewNote({
 }
 
 function CanvasSearchModal({
-  userId,
   onSelectNote,
   onClose,
 }: {
-  userId: Id<"users">;
   onSelectNote: (noteId: Id<"notes">) => void;
   onClose: () => void;
 }) {
   return (
     <div className="w-[300px] max-h-[300px] flex">
-      <SearchModal
-        userId={userId}
-        onSelectNote={onSelectNote}
-        onClose={onClose}
-      />
+      <SearchModal onSelectNote={onSelectNote} onClose={onClose} />
     </div>
   );
 }

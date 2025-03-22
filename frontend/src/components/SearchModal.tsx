@@ -7,11 +7,9 @@ import * as Icons from "react-icons/fa";
 export type ModalState = "none" | "parent" | "link";
 
 export function SearchModal({
-  userId,
   onSelectNote,
   onClose,
 }: {
-  userId: Id<"users">;
   onSelectNote: (noteId: Id<"notes">) => void;
   onClose: () => void;
 }) {

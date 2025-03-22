@@ -2,13 +2,7 @@ import {
   customQuery,
   customMutation,
 } from "convex-helpers/server/customFunctions";
-import {
-  ActionCtx,
-  mutation,
-  MutationCtx,
-  QueryCtx,
-  query,
-} from "./_generated/server";
+import { mutation, MutationCtx, QueryCtx, query } from "./_generated/server";
 import { Doc } from "./_generated/dataModel";
 
 async function validateAndAddAuth<Ctx extends MutationCtx | QueryCtx>(

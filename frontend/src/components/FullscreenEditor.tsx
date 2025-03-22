@@ -163,7 +163,6 @@ export function FullscreenEditor({
     return (
       <div className="flex-grow flex p-8">
         <SearchModal
-          userId={note.userId}
           onSelectNote={match(modalState)
             .with("parent", () => handleSetParent)
             .with("link", () => handleAddLink)
