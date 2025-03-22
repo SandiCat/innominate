@@ -10,7 +10,7 @@ interface NoteBodyProps {
 
 export function NoteBody({ content }: NoteBodyProps) {
   return (
-    <div className="whitespace-pre-wrap">
+    <div className="whitespace-pre-wrap break-words">
       {parseNoteBody(content).map((token, i) =>
         token.type === "text" ? (
           <span key={i}>{token.text}</span>
