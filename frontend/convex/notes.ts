@@ -88,7 +88,8 @@ export const update = myMutation({
       parentId,
     });
 
-    await ctx.scheduler.runAfter(0, internal.notesActions.generateEmbedding, {
+    // TODO: if the content of the lineage notes changes, the embedding will not be recomputed
+    await ctx.scheduler.runAfter(0, internal.embeddings.generateEmbedding, {
       noteId,
     });
   },
@@ -212,89 +213,3 @@ export const getMentionedBy = myQuery({
     );
   },
 });
-
-export const removeAllEmbeddings = internalMutation({
-  args: {},
-  handler: async (ctx) => {
-    const notes = await ctx.db
-      .query("notes")
-      .filter((q) => q.neq(q.field("embedding"), undefined))
-      .collect();
-    for (const note of notes) {
-      await ctx.db.patch(note._id, { embedding: undefined });
-    }
-  },
-});
-
-export const notesNeedingEmbeddingBatch = internalQuery({
-  args: {},
-  handler: async (ctx) => {
-    const notes = await ctx.db
-      .query("notes")
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("embedding"), undefined),
-          q.not(
-            q.and(
-              q.eq(q.field("title"), ""),
-              q.eq(q.field("content"), ""),
-              q.eq(q.field("metadata"), "")
-            )
-          )
-        )
-      )
-      .take(100);
-    return notes.map((note) => note._id);
-  },
-});
-
-export const getEmbeddingText = internalQuery({
-  args: {
-    noteId: v.id("notes"),
-  },
-  handler: async (ctx, { noteId }) => {
-    const note = await ctx.db.get(noteId);
-    if (!note) {
-      console.error("Note not found");
-      return;
-    }
-    return buildSearchText(note.title, note.content, note.metadata);
-  },
-});
-
-export const storeEmbedding = internalMutation({
-  args: {
-    noteId: v.id("notes"),
-    embedding: v.array(v.number()),
-  },
-  handler: async (ctx, { noteId, embedding }) => {
-    await ctx.db.patch(noteId, { embedding });
-  },
-});
-
-// export const vectorSearch = myQuery({
-//   args: {
-//     query: v.string(),
-//     limit: v.optional(v.number()),
-//   },
-//   handler: async (ctx, { query, limit = 10 }) => {
-//     // First, generate embedding for the search query
-//     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-//     const model = genAI.getGenerativeModel({ model: "embedding-001" });
-
-//     try {
-//       const result = await model.embedContent(query);
-//       const embedding = result.embedding.values;
-
-//       // Perform vector search
-//       return await ctx.db
-//         .query("notes")
-//         .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
-//         .withVectorSearch("embedding", { vector: embedding, limit })
-//         .collect();
-//     } catch (error) {
-//       console.error("Error in vector search:", error);
-//       return [];
-//     }
-//   },
-// });

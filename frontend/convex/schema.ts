@@ -2,7 +2,7 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { twitterTables } from "./twitter/schema";
 import { vec2 } from "./types";
-import { EMBEDDING_DIM } from "./notesActions";
+import { EMBEDDING_DIM } from "./embeddings";
 
 export default defineSchema({
   users: defineTable({
