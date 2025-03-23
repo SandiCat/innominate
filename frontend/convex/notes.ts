@@ -1,9 +1,5 @@
 import { myQuery, myMutation } from "./wrapper";
-import {
-  internalMutation,
-  internalQuery,
-  MutationCtx,
-} from "./_generated/server";
+import { MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { parseNoteBody } from "../src/types";
 import { humanReadableID } from "./human_hash/human_hash";
