@@ -1,19 +1,21 @@
 import { Id } from "convex/_generated/dataModel";
 import { SidebarDrawer } from "./sidebar/Drawer";
 import { useState } from "react";
-import { Tab, Tabs } from "./sidebar/Tabs";
 import { WithNoteId } from "./FullscreenEditor";
 import { RoundedButton } from "./RoundedButton";
 import * as Icons from "react-icons/fa";
 import { api } from "../../convex/_generated/api";
 import { useMutation } from "convex/react";
+import { useAtom } from "jotai";
+import { selectedTabAtom } from "@/jotaiAtoms";
+import { Tab, Tabs } from "./sidebar/Tabs";
 
 export function OverlayUI({
   onDragStart,
 }: {
   onDragStart: (e: React.MouseEvent, noteId: Id<"notes">) => void;
 }) {
-  const [selectedTab, setSelectedTab] = useState<Tab>({ type: "collapsed" });
+  const [selectedTab, setSelectedTab] = useAtom(selectedTabAtom);
   const [editingNote, setEditingNote] = useState<Id<"notes"> | null>(null);
   const createNote = useMutation(api.notes.create);
 

@@ -5,6 +5,7 @@ import {
   TbLayoutSidebarRightFilled,
 } from "react-icons/tb";
 import { FaWandMagicSparkles } from "react-icons/fa6";
+import { Id } from "convex/_generated/dataModel";
 
 interface IconButtonProps {
   icon: React.ReactNode;
@@ -30,7 +31,8 @@ function IconButton({ icon, selected, onClick }: IconButtonProps) {
 export type UncollapsedTab =
   | { type: "search"; query: string }
   | { type: "recent" }
-  | { type: "recommended" };
+  // TODO: `{ type: "similar"; noteId: Id<"notes"> }` would be better
+  | { type: "similar"; noteIds: Id<"notes">[] };
 
 export type Tab = UncollapsedTab | { type: "collapsed" };
 
@@ -85,9 +87,9 @@ export function Tabs({ selectedTab, onTabChange }: TabsProps) {
         />
         <IconButton
           icon={<FaWandMagicSparkles className="w-[16px] h-[16px]" />}
-          selected={selectedTab.type === "recommended"}
+          selected={selectedTab.type === "similar"}
           onClick={() => {
-            onTabChange({ type: "recommended" });
+            onTabChange({ type: "similar", noteIds: [] });
           }}
         />
       </div>

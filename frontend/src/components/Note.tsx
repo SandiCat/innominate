@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Doc, Id } from "../../convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { match } from "ts-pattern";
 import { MdRemoveCircleOutline } from "react-icons/md";
@@ -20,6 +20,9 @@ import { addLink, shortDisplay } from "@/lib/note";
 import { SearchModal, ModalState } from "./SearchModal";
 import { isDirectClick } from "@/lib/utils";
 import { ButtonIcon, ButtonContainer } from "./note/Buttons";
+import { FaWandMagic } from "react-icons/fa6";
+import { useSetAtom } from "jotai";
+import { selectedTabAtom } from "@/jotaiAtoms";
 
 function EditContents({
   content,
@@ -471,6 +474,8 @@ function ViewNoteButtons({
   const deleteNote = useMutation(api.notes.deleteNote);
   const removeFromCanvas = useMutation(api.canvasItems.removeFromCanvas);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const setSelectedTab = useSetAtom(selectedTabAtom);
+  const getSimilarNotes = useAction(api.embeddings.getSimilarNotes);
 
   if (UIState === undefined) return null;
 
@@ -507,6 +512,11 @@ function ViewNoteButtons({
     await removeFromCanvas({ id: canvasItemId });
   };
 
+  const handleShowSimilar = async () => {
+    const noteIds = await getSimilarNotes({ noteId });
+    setSelectedTab({ type: "similar", noteId });
+  };
+
   return (
     <ButtonContainer>
       <ButtonIcon
@@ -526,6 +536,7 @@ function ViewNoteButtons({
         <ButtonIcon icon={<FaLevelUpAlt />} onClick={handleCreateSibling} />
       )}
       <ButtonIcon icon={<FaEdit />} onClick={handleToggleMode} />
+      <ButtonIcon icon={<FaWandMagic />} onClick={handleShowSimilar} />
     </ButtonContainer>
   );
 }

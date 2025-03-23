@@ -192,3 +192,12 @@ export const embedAllNotes = internalAction({
     await ctx.scheduler.runAfter(0, internal.embeddings.embedAllNotes);
   },
 });
+
+export const getSimilarNotes = internalAction({
+  args: {
+    noteId: v.id("notes"),
+  },
+  handler: async (ctx, { noteId }) => {
+    return [noteId];
+  },
+});
