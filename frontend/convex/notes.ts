@@ -1,10 +1,15 @@
 import { myQuery, myMutation } from "./wrapper";
-import { MutationCtx } from "./_generated/server";
+import {
+  internalMutation,
+  internalQuery,
+  MutationCtx,
+} from "./_generated/server";
 import { v } from "convex/values";
 import { parseNoteBody } from "../src/types";
 import { humanReadableID } from "./human_hash/human_hash";
 import { Id } from "./_generated/dataModel";
 import { buildSearchText } from "@/lib/note";
+import { internal } from "./_generated/api";
 
 export async function createEmptyNote(
   ctx: MutationCtx,
@@ -81,6 +86,10 @@ export const update = myMutation({
       metadata,
       searchText,
       parentId,
+    });
+
+    await ctx.scheduler.runAfter(0, internal.notesActions.generateEmbedding, {
+      noteId,
     });
   },
 });
@@ -203,3 +212,89 @@ export const getMentionedBy = myQuery({
     );
   },
 });
+
+export const removeAllEmbeddings = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const notes = await ctx.db
+      .query("notes")
+      .filter((q) => q.neq(q.field("embedding"), undefined))
+      .collect();
+    for (const note of notes) {
+      await ctx.db.patch(note._id, { embedding: undefined });
+    }
+  },
+});
+
+export const notesNeedingEmbeddingBatch = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const notes = await ctx.db
+      .query("notes")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("embedding"), undefined),
+          q.not(
+            q.and(
+              q.eq(q.field("title"), ""),
+              q.eq(q.field("content"), ""),
+              q.eq(q.field("metadata"), "")
+            )
+          )
+        )
+      )
+      .take(100);
+    return notes.map((note) => note._id);
+  },
+});
+
+export const getEmbeddingText = internalQuery({
+  args: {
+    noteId: v.id("notes"),
+  },
+  handler: async (ctx, { noteId }) => {
+    const note = await ctx.db.get(noteId);
+    if (!note) {
+      console.error("Note not found");
+      return;
+    }
+    return buildSearchText(note.title, note.content, note.metadata);
+  },
+});
+
+export const storeEmbedding = internalMutation({
+  args: {
+    noteId: v.id("notes"),
+    embedding: v.array(v.number()),
+  },
+  handler: async (ctx, { noteId, embedding }) => {
+    await ctx.db.patch(noteId, { embedding });
+  },
+});
+
+// export const vectorSearch = myQuery({
+//   args: {
+//     query: v.string(),
+//     limit: v.optional(v.number()),
+//   },
+//   handler: async (ctx, { query, limit = 10 }) => {
+//     // First, generate embedding for the search query
+//     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+//     const model = genAI.getGenerativeModel({ model: "embedding-001" });
+
+//     try {
+//       const result = await model.embedContent(query);
+//       const embedding = result.embedding.values;
+
+//       // Perform vector search
+//       return await ctx.db
+//         .query("notes")
+//         .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
+//         .withVectorSearch("embedding", { vector: embedding, limit })
+//         .collect();
+//     } catch (error) {
+//       console.error("Error in vector search:", error);
+//       return [];
+//     }
+//   },
+// });

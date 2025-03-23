@@ -2,6 +2,7 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { twitterTables } from "./twitter/schema";
 import { vec2 } from "./types";
+import { EMBEDDING_DIM } from "./notesActions";
 
 export default defineSchema({
   users: defineTable({
@@ -15,11 +16,17 @@ export default defineSchema({
     parentId: v.optional(v.id("notes")),
     userId: v.id("users"),
     humanReadableId: v.string(),
+    embedding: v.optional(v.array(v.number())),
   })
     .index("by_user", ["userId"])
     .index("by_parent", ["parentId"])
     .searchIndex("search_searchText", {
       searchField: "searchText",
+      filterFields: ["userId"],
+    })
+    .vectorIndex("by_embedding", {
+      vectorField: "embedding",
+      dimensions: EMBEDDING_DIM,
       filterFields: ["userId"],
     }),
   mentions: defineTable({
