@@ -8,6 +8,7 @@ import {
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { Doc, Id } from "./_generated/dataModel";
+import * as TextTree from "@/lib/TextTree";
 
 export const removeAllEmbeddings = internalMutation({
   args: {},
@@ -38,41 +39,38 @@ export const notesNeedingEmbeddingBatch = internalQuery({
   },
 });
 
-function noteRepr(tag: string, note: Doc<"notes">) {
-  const indent = "  ";
+function noteRepr(tag: string, note: Doc<"notes">): TextTree.TextTree[] {
+  const body = [`<body>`, TextTree.indent(note.content.split("\n")), `</body>`];
 
-  const inner = [
+  const fields: TextTree.TextTree[] = [
     note.title ? `<title>${note.title}</title>` : null,
-    note.content ? `<content>\n${note.content}\n${indent}</content>` : null,
+    note.content ? TextTree.spread(body) : null,
     note.metadata ? `<metadata>${note.metadata}</metadata>` : null,
-  ]
-    .filter((f) => f !== null)
-    .map((f) => indent + f)
-    .join("\n");
+  ].filter((f) => f !== null);
 
-  return `<${tag}>
-    ${inner}
-  </${tag}>`;
+  return [`<${tag}>`, TextTree.indent(fields), `</${tag}>`];
 }
 
 export function buildEmbeddingText(
   lineage: Doc<"notes">[],
   note: Doc<"notes">
-) {
-  return `<context>
-    ${lineage
-      .map((note, ix) => {
+): string {
+  const tree: TextTree.TextTree = TextTree.spread([
+    "<context>",
+    TextTree.indent(
+      lineage.map((note, ix) => {
         const tag = ix === 0 ? "root" : "reply";
-        return noteRepr(tag, note);
+        return TextTree.spread(noteRepr(tag, note));
       })
-      .join("\n")}
-  </context>
-  <main>
-    ${noteRepr("reply", note)}
-  </main>`;
+    ),
+    "</context>",
+    TextTree.spread(noteRepr("mainReply", note)),
+  ]);
+
+  return TextTree.render(tree);
 }
 
-export const getEmbeddingText = query({
+export const getEmbeddingText = internalQuery({
   args: {
     noteId: v.id("notes"),
   },
