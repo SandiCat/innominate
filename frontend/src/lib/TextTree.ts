@@ -10,10 +10,12 @@ export function spread(children: TextTree[]): TextTree {
   return { shouldIndent: false, children };
 }
 
+const INDENT: string = "    ";
+
 export function render(tree: TextTree): string {
   function rec(tree: TextTree, indent: number): string {
     return match(tree)
-      .with(P.string, (s) => " ".repeat(indent) + s)
+      .with(P.string, (s) => INDENT.repeat(indent) + s)
       .with(
         { shouldIndent: P.boolean, children: P.array() },
         ({ children, shouldIndent }) => {

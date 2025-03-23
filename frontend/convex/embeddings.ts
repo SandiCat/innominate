@@ -54,7 +54,7 @@ export function buildEmbeddingText(
   lineage: Doc<"notes">[],
   note: Doc<"notes">
 ): string {
-  const tree: TextTree.TextTree = TextTree.spread([
+  const context = [
     "<context>",
     TextTree.indent(
       lineage.map((note, ix) => {
@@ -63,6 +63,12 @@ export function buildEmbeddingText(
       })
     ),
     "</context>",
+  ];
+
+  const optionalContext = lineage.length > 0 ? context : [];
+
+  const tree: TextTree.TextTree = TextTree.spread([
+    ...optionalContext,
     TextTree.spread(noteRepr("mainReply", note)),
   ]);
 
@@ -104,33 +110,6 @@ export const storeEmbedding = internalMutation({
     await ctx.db.patch(noteId, { embedding });
   },
 });
-
-// export const vectorSearch = myQuery({
-//   args: {
-//     query: v.string(),
-//     limit: v.optional(v.number()),
-//   },
-//   handler: async (ctx, { query, limit = 10 }) => {
-//     // First, generate embedding for the search query
-//     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-//     const model = genAI.getGenerativeModel({ model: "embedding-001" });
-
-//     try {
-//       const result = await model.embedContent(query);
-//       const embedding = result.embedding.values;
-
-//       // Perform vector search
-//       return await ctx.db
-//         .query("notes")
-//         .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
-//         .withVectorSearch("embedding", { vector: embedding, limit })
-//         .collect();
-//     } catch (error) {
-//       console.error("Error in vector search:", error);
-//       return [];
-//     }
-//   },
-// });
 
 const MODEL = "text-embedding-3-large";
 export const EMBEDDING_DIM = 3072;

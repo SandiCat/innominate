@@ -21,6 +21,7 @@ import type * as human_hash_words from "../human_hash/words.js";
 import type * as migrations from "../migrations.js";
 import type * as noteUIStates from "../noteUIStates.js";
 import type * as notes from "../notes.js";
+import type * as scripts from "../scripts.js";
 import type * as twitter_functions from "../twitter/functions.js";
 import type * as types from "../types.js";
 import type * as users from "../users.js";
@@ -43,6 +44,7 @@ declare const fullApi: ApiFromModules<{
   migrations: typeof migrations;
   noteUIStates: typeof noteUIStates;
   notes: typeof notes;
+  scripts: typeof scripts;
   "twitter/functions": typeof twitter_functions;
   types: typeof types;
   users: typeof users;
