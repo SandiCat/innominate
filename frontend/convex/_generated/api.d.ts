@@ -16,7 +16,6 @@ import type {
 import type * as canvasItems from "../canvasItems.js";
 import type * as canvases from "../canvases.js";
 import type * as embeddings from "../embeddings.js";
-import type * as embeddingsActions from "../embeddingsActions.js";
 import type * as human_hash_human_hash from "../human_hash/human_hash.js";
 import type * as human_hash_words from "../human_hash/words.js";
 import type * as migrations from "../migrations.js";
@@ -40,7 +39,6 @@ declare const fullApi: ApiFromModules<{
   canvasItems: typeof canvasItems;
   canvases: typeof canvases;
   embeddings: typeof embeddings;
-  embeddingsActions: typeof embeddingsActions;
   "human_hash/human_hash": typeof human_hash_human_hash;
   "human_hash/words": typeof human_hash_words;
   migrations: typeof migrations;

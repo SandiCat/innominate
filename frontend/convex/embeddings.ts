@@ -3,12 +3,12 @@ import {
   ActionCtx,
   internalMutation,
   internalQuery,
-  action,
 } from "./_generated/server";
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
 import { Doc, Id } from "./_generated/dataModel";
-import * as TextTree from "@/lib/TextTree";
+import * as TextTree from "../src/lib/TextTree";
+import { myAction } from "./wrapper";
 
 export const removeAllEmbeddings = internalMutation({
   args: {},
@@ -191,5 +191,40 @@ export const embedAllNotes = internalAction({
     }
     await generateEmbeddings(ctx, noteIds);
     await ctx.scheduler.runAfter(0, internal.embeddings.embedAllNotes);
+  },
+});
+
+type SearchResult = {
+  _id: Id<"notes">;
+  _score: number;
+};
+
+export const getSimilarNotes = myAction({
+  args: {
+    noteId: v.id("notes"),
+  },
+  handler: async (ctx, { noteId }): Promise<SearchResult[]> => {
+    const note = await ctx.runQuery(api.notes.get, {
+      noteId,
+    });
+    if (!note) {
+      console.error("Note not found");
+      return [];
+    }
+    const embedding = note.embedding;
+    if (!embedding) {
+      return [];
+    }
+    const searchResults = await ctx.vectorSearch("notes", "by_embedding", {
+      vector: embedding,
+      limit: 20,
+      filter: (q) => q.eq("userId", note.userId),
+    });
+
+    const filteredResults = searchResults.filter(
+      (result) => result._id !== noteId
+    );
+
+    return filteredResults;
   },
 });

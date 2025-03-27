@@ -1,5 +1,5 @@
 import { internalMutation } from "./_generated/server";
-import { buildSearchText } from "@/lib/note";
+import { buildSearchText } from "../src/lib/note";
 
 export const addMetadata = internalMutation({
   args: {},

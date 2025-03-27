@@ -12,6 +12,7 @@ import {
   ActionCtx,
 } from "./_generated/server";
 import { Doc } from "./_generated/dataModel";
+import { api } from "./_generated/api";
 
 async function validateAndAddAuth<Ctx extends MutationCtx | QueryCtx>(
   ctx: Ctx,
@@ -44,9 +45,17 @@ export const myMutation = customMutation(mutation, {
   input: validateAndAddAuth,
 });
 
-// export const myAction = customAction(action, {
-//   args: {},
-//   input: (ctx, args) => {
-
-//   },
-// });
+export const myAction = customAction(action, {
+  args: {},
+  input: async (
+    ctx,
+    args
+  ): Promise<{
+    ctx: ActionCtx & { user: Doc<"users"> };
+    args: Record<string, never>;
+  }> => {
+    const user = await ctx.runQuery(api.users.userInfo);
+    const ctxWithUser = { ...ctx, user };
+    return { ctx: ctxWithUser, args };
+  },
+});
