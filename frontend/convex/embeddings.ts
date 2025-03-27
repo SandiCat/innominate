@@ -3,9 +3,10 @@ import {
   ActionCtx,
   internalMutation,
   internalQuery,
+  action,
 } from "./_generated/server";
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { Doc, Id } from "./_generated/dataModel";
 import * as TextTree from "@/lib/TextTree";
 
@@ -190,14 +191,5 @@ export const embedAllNotes = internalAction({
     }
     await generateEmbeddings(ctx, noteIds);
     await ctx.scheduler.runAfter(0, internal.embeddings.embedAllNotes);
-  },
-});
-
-export const getSimilarNotes = internalAction({
-  args: {
-    noteId: v.id("notes"),
-  },
-  handler: async (ctx, { noteId }) => {
-    return [noteId];
   },
 });

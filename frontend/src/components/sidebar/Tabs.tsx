@@ -31,8 +31,7 @@ function IconButton({ icon, selected, onClick }: IconButtonProps) {
 export type UncollapsedTab =
   | { type: "search"; query: string }
   | { type: "recent" }
-  // TODO: `{ type: "similar"; noteId: Id<"notes"> }` would be better
-  | { type: "similar"; noteIds: Id<"notes">[] };
+  | { type: "similar"; noteId?: Id<"notes"> };
 
 export type Tab = UncollapsedTab | { type: "collapsed" };
 
@@ -89,7 +88,7 @@ export function Tabs({ selectedTab, onTabChange }: TabsProps) {
           icon={<FaWandMagicSparkles className="w-[16px] h-[16px]" />}
           selected={selectedTab.type === "similar"}
           onClick={() => {
-            onTabChange({ type: "similar", noteIds: [] });
+            onTabChange({ type: "similar", noteId: undefined });
           }}
         />
       </div>

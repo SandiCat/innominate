@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Doc, Id } from "../../convex/_generated/dataModel";
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { match } from "ts-pattern";
 import { MdRemoveCircleOutline } from "react-icons/md";
@@ -475,7 +475,6 @@ function ViewNoteButtons({
   const removeFromCanvas = useMutation(api.canvasItems.removeFromCanvas);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const setSelectedTab = useSetAtom(selectedTabAtom);
-  const getSimilarNotes = useAction(api.embeddings.getSimilarNotes);
 
   if (UIState === undefined) return null;
 
@@ -513,7 +512,6 @@ function ViewNoteButtons({
   };
 
   const handleShowSimilar = async () => {
-    const noteIds = await getSimilarNotes({ noteId });
     setSelectedTab({ type: "similar", noteId });
   };
 

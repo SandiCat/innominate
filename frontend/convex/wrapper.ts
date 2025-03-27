@@ -1,8 +1,16 @@
 import {
   customQuery,
   customMutation,
+  customAction,
 } from "convex-helpers/server/customFunctions";
-import { mutation, MutationCtx, QueryCtx, query } from "./_generated/server";
+import {
+  mutation,
+  MutationCtx,
+  QueryCtx,
+  query,
+  action,
+  ActionCtx,
+} from "./_generated/server";
 import { Doc } from "./_generated/dataModel";
 
 async function validateAndAddAuth<Ctx extends MutationCtx | QueryCtx>(
@@ -35,3 +43,10 @@ export const myMutation = customMutation(mutation, {
   args: {},
   input: validateAndAddAuth,
 });
+
+// export const myAction = customAction(action, {
+//   args: {},
+//   input: (ctx, args) => {
+
+//   },
+// });

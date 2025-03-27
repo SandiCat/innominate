@@ -1,11 +1,11 @@
 import { Id } from "../../../convex/_generated/dataModel";
 import { ReadOnlyNote } from "../Note";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { UncollapsedTab } from "./Tabs";
 import { match } from "ts-pattern";
 import { mouseClickVsDrag } from "@/lib/utils";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaEdit, FaReply, FaTrash, FaCheck } from "react-icons/fa";
 import { ButtonIcon, ButtonContainer } from "../note/Buttons";
 
@@ -147,14 +147,37 @@ function RecentNotes({
   );
 }
 
-function RecommendedNotes({
+function SimilarNotes({
   onDragStart,
   onSelect,
+  noteId,
 }: {
   onDragStart: (e: React.MouseEvent, noteId: Id<"notes">) => void;
   onSelect: (noteId: Id<"notes">) => void;
+  noteId?: Id<"notes">;
 }) {
-  return <Drawer notes={[]} onDragStart={onDragStart} onSelect={onSelect} />;
+  const getSimilarNotes = useAction(api.embeddings.getSimilarNotes);
+  const [similarNotes, setSimilarNotes] = useState<NoteSearchResult[] | null>(
+    null
+  );
+
+  useEffect(() => {
+    async function fetchSimilarNotes() {
+      if (noteId) {
+        const fetchedSimilarNotes = await getSimilarNotes({ noteId });
+        setSimilarNotes(fetchedSimilarNotes);
+      }
+    }
+    fetchSimilarNotes();
+  }, [noteId, getSimilarNotes]);
+
+  return (
+    <Drawer
+      notes={similarNotes}
+      onDragStart={onDragStart}
+      onSelect={onSelect}
+    />
+  );
 }
 
 interface SidebarProps {
@@ -179,8 +202,12 @@ export function SidebarDrawer({
     .with({ type: "recent" }, () => (
       <RecentNotes onDragStart={onDragStart} onSelect={onSelect} />
     ))
-    .with({ type: "recommended" }, () => (
-      <RecommendedNotes onDragStart={onDragStart} onSelect={onSelect} />
+    .with({ type: "similar" }, ({ noteId }) => (
+      <SimilarNotes
+        onDragStart={onDragStart}
+        onSelect={onSelect}
+        noteId={noteId}
+      />
     ))
     .exhaustive();
 }

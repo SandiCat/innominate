@@ -1,4 +1,5 @@
-import { mutation } from "./_generated/server";
+import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
 
 export const upsertUser = mutation({
   args: {},
@@ -19,3 +20,12 @@ export const upsertUser = mutation({
     return await ctx.db.insert("users", { clerkId: identity.subject });
   },
 });
+
+// export const userFromClerkId = query({
+//   args: {
+//     clerkId: v.string(),
+//   },
+//   handler: async (ctx, { clerkId }) => {
+//     return await ctx.db.query("users").withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId)).unique();
+//   },
+// });
