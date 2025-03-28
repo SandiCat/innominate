@@ -31,6 +31,7 @@
     "tailwindcss-animate": "^1.0.7",
     "throttled-queue": "^2.1.4",
     "ts-pattern": "^5.5.0",
+    "use-debounce": "^10.0.4",
     "use-immer": "^0.10.0"
   },
   "devDependencies": {

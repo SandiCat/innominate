@@ -228,3 +228,22 @@ export const getSimilarNotes = myAction({
     return filteredResults;
   },
 });
+
+export const search = myAction({
+  args: {
+    query: v.string(),
+  },
+  handler: async (ctx, { query }) => {
+    if (query === "") {
+      return [];
+    }
+
+    const [embedding] = await callOpenAIEmbeddingsAPI([query]);
+    const searchResults = await ctx.vectorSearch("notes", "by_embedding", {
+      vector: embedding,
+      limit: 20,
+      filter: (q) => q.eq("userId", ctx.user._id),
+    });
+    return searchResults;
+  },
+});

@@ -52,3 +52,8 @@ export function mouseClickVsDrag(
   document.addEventListener("mousemove", onMouseMove);
   document.addEventListener("mouseup", onMouseUp);
 }
+
+export function passLog<T>(toLog: T): T {
+  console.log(toLog);
+  return toLog;
+}

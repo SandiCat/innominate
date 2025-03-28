@@ -8,8 +8,7 @@ import { mouseClickVsDrag } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { FaEdit, FaReply, FaTrash, FaCheck } from "react-icons/fa";
 import { ButtonIcon, ButtonContainer } from "../note/Buttons";
-import { IconButton } from "../IconButton";
-import { BsStars } from "react-icons/bs";
+import { useDebounce } from "use-debounce";
 
 interface NoteSearchResult {
   _id: Id<"notes">;
@@ -119,40 +118,32 @@ function Drawer({
 
 function SearchResults({
   query,
+  useEmbeddings,
   onDragStart,
   onSelect,
 }: {
   query: string;
+  useEmbeddings: boolean;
   onDragStart: (e: React.MouseEvent, noteId: Id<"notes">) => void;
   onSelect: (noteId: Id<"notes">) => void;
 }) {
-  const [useEmbeddings, setUseEmbeddings] = useState(false);
-
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-row gap-2">
-        <IconButton
-          icon={<BsStars />}
-          selected={useEmbeddings}
-          onClick={() => setUseEmbeddings(!useEmbeddings)}
-        />
-      </div>
-
-      {useEmbeddings ? (
-        <SearchResultsEmbeddings
-          query={query}
-          onDragStart={onDragStart}
-          onSelect={onSelect}
-        />
-      ) : (
-        <SearchResultsText
-          query={query}
-          onDragStart={onDragStart}
-          onSelect={onSelect}
-        />
-      )}
-    </div>
-  );
+  if (useEmbeddings) {
+    return (
+      <SearchResultsEmbeddings
+        query={query}
+        onDragStart={onDragStart}
+        onSelect={onSelect}
+      />
+    );
+  } else {
+    return (
+      <SearchResultsText
+        query={query}
+        onDragStart={onDragStart}
+        onSelect={onSelect}
+      />
+    );
+  }
 }
 
 function SearchResultsText({
@@ -182,7 +173,27 @@ function SearchResultsEmbeddings({
   onDragStart: (e: React.MouseEvent, noteId: Id<"notes">) => void;
   onSelect: (noteId: Id<"notes">) => void;
 }) {
-  return <Drawer notes={null} onDragStart={onDragStart} onSelect={onSelect} />;
+  const [debouncedQuery] = useDebounce(query, 500);
+  const [searchResults, setSearchResults] = useState<NoteSearchResult[] | null>(
+    null
+  );
+  const search = useAction(api.embeddings.search);
+
+  useEffect(() => {
+    async function fetchSearchResults() {
+      const results = await search({ query: debouncedQuery });
+      setSearchResults(results);
+    }
+    fetchSearchResults();
+  }, [debouncedQuery, search]);
+
+  return (
+    <Drawer
+      notes={searchResults}
+      onDragStart={onDragStart}
+      onSelect={onSelect}
+    />
+  );
 }
 
 function RecentNotes({
@@ -247,6 +258,7 @@ export function SidebarDrawer({
     .with({ type: "search" }, (tab) => (
       <SearchResults
         query={tab.query}
+        useEmbeddings={tab.useEmbeddings}
         onDragStart={onDragStart}
         onSelect={onSelect}
       />

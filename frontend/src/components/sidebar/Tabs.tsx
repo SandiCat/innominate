@@ -1,4 +1,5 @@
 import * as Icons from "react-icons/fa";
+import { BsStars } from "react-icons/bs";
 import {
   TbLayoutSidebarRight,
   TbLayoutSidebarRightFilled,
@@ -8,7 +9,7 @@ import { Id } from "convex/_generated/dataModel";
 import { IconButton } from "../IconButton";
 
 export type UncollapsedTab =
-  | { type: "search"; query: string }
+  | { type: "search"; query: string; useEmbeddings: boolean }
   | { type: "recent" }
   | { type: "similar"; noteId?: Id<"notes"> };
 
@@ -40,20 +41,35 @@ export function Tabs({ selectedTab, onTabChange }: TabsProps) {
             icon={<Icons.FaSearch className="w-[16px] h-[16px]" />}
             selected={selectedTab.type === "search"}
             onClick={() => {
-              onTabChange({ type: "search", query: "" });
+              onTabChange({ type: "search", query: "", useEmbeddings: false });
             }}
           />
           {selectedTab.type === "search" && (
-            <input
-              type="text"
-              className="bg-transparent border-none outline-none text-slate-700 w-32 px-2 placeholder:text-slate-400"
-              placeholder="Search..."
-              value={selectedTab.query}
-              onChange={(e) =>
-                onTabChange({ type: "search", query: e.target.value })
-              }
-              autoFocus
-            />
+            <div className="flex flex-row items-center gap-1">
+              <input
+                type="text"
+                className="bg-transparent border-none outline-none text-slate-700 w-32 px-2 placeholder:text-slate-400"
+                placeholder="Search..."
+                value={selectedTab.query}
+                onChange={(e) =>
+                  onTabChange({
+                    ...selectedTab,
+                    query: e.target.value,
+                  })
+                }
+                autoFocus
+              />
+              <IconButton
+                icon={<BsStars className="w-[12px] h-[12px]" />}
+                selected={selectedTab.useEmbeddings}
+                onClick={() => {
+                  onTabChange({
+                    ...selectedTab,
+                    useEmbeddings: !selectedTab.useEmbeddings,
+                  });
+                }}
+              />
+            </div>
           )}
         </div>
         <IconButton
