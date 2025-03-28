@@ -1,4 +1,3 @@
-import { cn } from "@/lib/utils";
 import * as Icons from "react-icons/fa";
 import {
   TbLayoutSidebarRight,
@@ -6,27 +5,7 @@ import {
 } from "react-icons/tb";
 import { FaWandMagicSparkles } from "react-icons/fa6";
 import { Id } from "convex/_generated/dataModel";
-
-interface IconButtonProps {
-  icon: React.ReactNode;
-  selected: boolean;
-  onClick: () => void;
-}
-
-function IconButton({ icon, selected, onClick }: IconButtonProps) {
-  return (
-    <div
-      className={cn(
-        "w-9 h-9 rounded-lg flex items-center justify-center transition-all",
-        "hover:bg-slate-200/80 active:scale-95",
-        selected ? "bg-white shadow-lg text-slate-700" : "text-slate-600"
-      )}
-      onClick={onClick}
-    >
-      <div className="text-[18px]">{icon}</div>
-    </div>
-  );
-}
+import { IconButton } from "../IconButton";
 
 export type UncollapsedTab =
   | { type: "search"; query: string }

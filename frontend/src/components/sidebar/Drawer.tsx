@@ -8,6 +8,8 @@ import { mouseClickVsDrag } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { FaEdit, FaReply, FaTrash, FaCheck } from "react-icons/fa";
 import { ButtonIcon, ButtonContainer } from "../note/Buttons";
+import { IconButton } from "../IconButton";
+import { BsStars } from "react-icons/bs";
 
 interface NoteSearchResult {
   _id: Id<"notes">;
@@ -124,6 +126,44 @@ function SearchResults({
   onDragStart: (e: React.MouseEvent, noteId: Id<"notes">) => void;
   onSelect: (noteId: Id<"notes">) => void;
 }) {
+  const [useEmbeddings, setUseEmbeddings] = useState(false);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-row gap-2">
+        <IconButton
+          icon={<BsStars />}
+          selected={useEmbeddings}
+          onClick={() => setUseEmbeddings(!useEmbeddings)}
+        />
+      </div>
+
+      {useEmbeddings ? (
+        <SearchResultsEmbeddings
+          query={query}
+          onDragStart={onDragStart}
+          onSelect={onSelect}
+        />
+      ) : (
+        <SearchResultsText
+          query={query}
+          onDragStart={onDragStart}
+          onSelect={onSelect}
+        />
+      )}
+    </div>
+  );
+}
+
+function SearchResultsText({
+  query,
+  onDragStart,
+  onSelect,
+}: {
+  query: string;
+  onDragStart: (e: React.MouseEvent, noteId: Id<"notes">) => void;
+  onSelect: (noteId: Id<"notes">) => void;
+}) {
   const searchResults = useQuery(api.notes.search, {
     query,
   });
@@ -131,6 +171,18 @@ function SearchResults({
   const notes = query === "" ? null : searchResults;
 
   return <Drawer notes={notes} onDragStart={onDragStart} onSelect={onSelect} />;
+}
+
+function SearchResultsEmbeddings({
+  query,
+  onDragStart,
+  onSelect,
+}: {
+  query: string;
+  onDragStart: (e: React.MouseEvent, noteId: Id<"notes">) => void;
+  onSelect: (noteId: Id<"notes">) => void;
+}) {
+  return <Drawer notes={null} onDragStart={onDragStart} onSelect={onSelect} />;
 }
 
 function RecentNotes({
